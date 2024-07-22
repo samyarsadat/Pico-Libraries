@@ -24,7 +24,7 @@
 
 
 #pragma once
-#include "uros_freertos_helpers_lib/RTOS_Agent.h"
+#include "freertos_helpers_lib/RTOS_Agent.h"
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <vector>
