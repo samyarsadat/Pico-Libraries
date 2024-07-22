@@ -34,4 +34,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       micro_ros
                                       FreeRTOS-Kernel
-                                      local_helpers_lib)
+                                      local_helpers_lib
+                                      freertos_helpers_lib)

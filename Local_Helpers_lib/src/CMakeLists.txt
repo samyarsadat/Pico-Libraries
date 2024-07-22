@@ -31,4 +31,5 @@ target_link_libraries(${PROJECT_NAME} micro_ros
                                       pico_stdlib
                                       hardware_adc
                                       freertos_helpers_lib
+                                      uros_freertos_helpers_lib
                                       FreeRTOS-Kernel)
