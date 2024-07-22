@@ -36,11 +36,11 @@
 #define MAX_SUBSCRIBERS  2
 #define MAX_SERVICES     7
 #define MAX_TIMERS       10
-#define MAX_EXEC_TIME    120
+#define MAX_EXEC_TIME    125
 
 // Misc.
 #define EXECUTOR_EXEC_INTERVAL_MS  100
-#define EXECUTOR_TIMEOUT_MS        50
+#define EXECUTOR_TIMEOUT_MS        40
 #define BRIDGE_AGENT_MEMORY_WORDS  2048
 #define BRIDGE_AGENT_NAME          "uROS_Bridge_Agent"
 
