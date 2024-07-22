@@ -22,17 +22,12 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Add source files
-add_library(${PROJECT_NAME} RTOS_Agent.c++
-                            utils/pico_uart_transport.c
-                            utils/uros_allocators.c
-                            uROS_Bridge_Agent.c++
-                            uROS_Publishing_Handler.c++)
+add_library(${PROJECT_NAME} RTOS_Agent.c++)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} pico_stdlib
-                                      micro_ros
                                       FreeRTOS-Kernel
                                       local_helpers_lib)
