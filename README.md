@@ -1,25 +1,25 @@
 <h1 align="center">Pico Libraries</h1>
 
 <p align="center">
-	<a href="LICENSE"><img src="https://img.shields.io/github/license/samyarsadat/ROS-Remote?color=blue"></a>
+	<a href="LICENSE"><img src="https://img.shields.io/github/license/samyarsadat/Pico-Libraries?color=blue"></a>
 	|
-	<a href="../../issues"><img src="https://img.shields.io/github/issues/samyarsadat/ROS-Remote"></a>
+	<a href="../../issues"><img src="https://img.shields.io/github/issues/samyarsadat/Pico-Libraries"></a>
 	<br><br>
 </p>
 
 <br><br>
 
 ----
-This repository contains a set of C/C++ helper/utility libraries that I have written for the Raspberry Pi Pico. I use these in some of my other projects.<br>
+This repository contains a set of C/C++ helper/utility libraries that I have written for the Raspberry Pi Pico.<br>
+I use these in some of my other projects.<br>
+<br>
 
 > [!NOTE]
 > You can add this repository as a submodule to use these libraries.
 
 <br><br>
 
-
-
-
+_TODO_
 
 <br>
 
