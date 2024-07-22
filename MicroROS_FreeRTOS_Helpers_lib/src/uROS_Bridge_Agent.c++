@@ -348,12 +348,17 @@ uRosBridgeAgent::UROS_STATE uRosBridgeAgent::get_agent_state()
 // Main execution function.
 void uRosBridgeAgent::execute()
 {
+    write_log("Starting MicroROS executor notification timer...", LOG_LVL_INFO, FUNCNAME_ONLY);
+    add_repeating_timer_ms(EXECUTOR_EXEC_INTERVAL_MS, uRosBridgeAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+
     uint32_t last_exec_time = 0;
     current_uros_state = WAITING_FOR_AGENT;
     write_log("Waiting for agent...", LOG_LVL_INFO, FUNCNAME_ONLY);
 
     while (true)
     {
+        xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);   // Wait for notification indefinitely
+
         switch (current_uros_state) 
         {
             case WAITING_FOR_AGENT:
@@ -371,23 +376,39 @@ void uRosBridgeAgent::execute()
                 
                 if (current_uros_state == AGENT_CONNECTED) 
                 {
-                    check_exec_interval(last_exec_time, (MAX_EXEC_TIME + EXECUTE_DELAY_MS), "Executor execution time exceeded limits!", true);
-                    bool exec_success = check_rc(rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(EXECUTOR_TIMEOUT_MS)), RT_LOG_ONLY_CHECK);
+                    check_exec_interval(last_exec_time, MAX_EXEC_TIME, "Executor execution time exceeded limits!", true);
+                    bool exec_failed = check_rc(rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(EXECUTOR_TIMEOUT_MS)), RT_LOG_ONLY_CHECK);
 
-                    if (post_exec_func != NULL && exec_success)
+                    if (post_exec_func != NULL && !exec_failed)
                     {
                         post_exec_func();
                     }
-
-                    vTaskDelay(EXECUTE_DELAY_MS / portTICK_PERIOD_MS);
                 }
 
                 break;
             
             case AGENT_DISCONNECTED:
                 write_log("Agent disconnected!", LOG_LVL_INFO, FUNCNAME_ONLY);
+                cancel_repeating_timer(&exec_timer_rt);
                 fini_func();
                 break;
         }
     }
+}
+
+
+// PRIVATE: Executor notification timer callback.
+bool uRosBridgeAgent::exec_notify_timer_callback(struct repeating_timer *rt)
+{
+    uRosBridgeAgent *bridge_agent = (uRosBridgeAgent *) rt->user_data;
+
+    if (bridge_agent != NULL)
+    {
+        BaseType_t higher_prio_woken;
+        vTaskNotifyGiveFromISR(uRosBridgeAgent::get_instance()->get_rtos_task(), &higher_prio_woken);
+        portYIELD_FROM_ISR(higher_prio_woken);
+        return true;
+    }
+
+    return false;
 }

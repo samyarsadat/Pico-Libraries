@@ -36,12 +36,12 @@ Agent::Agent(const char *name, configSTACK_DEPTH_TYPE task_stack_depth)
     {
 		memcpy(agent_name, name, MAX_NAME_LENGTH);
 		agent_name[MAX_NAME_LENGTH - 1] = 0;
-	}
+    }
     
     else 
     {
 		strcpy(agent_name, name);
-	}
+    }
 }
 
 
