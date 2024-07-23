@@ -1,7 +1,6 @@
 /*
     Pico Libraries (originally from The ROS robot project) - Local Helper/commonly used functions
     This file is for the diagnostics helper functions.
-    They are program-specific.
     
     Copyright 2024 Samyar Sadat Akhavi
     Written by Samyar Sadat Akhavi, 2024.

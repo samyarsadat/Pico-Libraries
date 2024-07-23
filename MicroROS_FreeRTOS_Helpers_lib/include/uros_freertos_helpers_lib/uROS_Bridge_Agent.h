@@ -25,6 +25,7 @@
 
 #pragma once
 #include "freertos_helpers_lib/RTOS_Agent.h"
+#include "pico/stdlib.h"
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <vector>
@@ -35,11 +36,11 @@
 #define MAX_SUBSCRIBERS  2
 #define MAX_SERVICES     7
 #define MAX_TIMERS       10
-#define MAX_EXEC_TIME    60
+#define MAX_EXEC_TIME    125
 
 // Misc.
-#define EXECUTE_DELAY_MS           80
-#define EXECUTOR_TIMEOUT_MS        25
+#define EXECUTOR_EXEC_INTERVAL_MS  100
+#define EXECUTOR_TIMEOUT_MS        40
 #define BRIDGE_AGENT_MEMORY_WORDS  2048
 #define BRIDGE_AGENT_NAME          "uROS_Bridge_Agent"
 
@@ -144,6 +145,10 @@ class uRosBridgeAgent : public Agent
 
         // MicroROS agent state
         UROS_STATE current_uros_state;
+
+        // Hardware timer for execution timing
+        struct repeating_timer exec_timer_rt;
+        static bool exec_notify_timer_callback(struct repeating_timer *rt);
 
         static uRosBridgeAgent *instance;
         rcl_allocator_t rcl_allocator;
