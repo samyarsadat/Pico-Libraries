@@ -26,6 +26,7 @@
 #include "local_helpers_lib/Local_Helpers.h"
 #include <rmw_microros/rmw_microros.h>
 #include "pico/stdio_uart.h"
+#include "pico/stdio_usb.h"
 #include "pico/stdio/driver.h"
 #include "pico/stdio.h"
 #include "semphr.h"
@@ -178,13 +179,23 @@ bool print_uart(std::string msg)
     // We don't care about the mutex if we're not in a task.
     if (xTaskGetCurrentTaskHandle() == NULL)
     {
+        #ifdef WRITE_LOG_PRINT_UART_OVER_USB_OVERRIDE
+        stdio_usb.out_chars(msg.c_str(), msg.length());
+        #else
         stdio_uart.out_chars(msg.c_str(), msg.length());
+        #endif
+
         return true;
     }
 
     if (xSemaphoreTake(print_uart_mutex, portMAX_DELAY) == pdTRUE)
     {
+        #ifdef WRITE_LOG_PRINT_UART_OVER_USB_OVERRIDE
+        stdio_usb.out_chars(msg.c_str(), msg.length());
+        #else
         stdio_uart.out_chars(msg.c_str(), msg.length());
+        #endif
+
         xSemaphoreGive(print_uart_mutex);
         return true;
     }
