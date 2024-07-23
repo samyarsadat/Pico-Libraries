@@ -29,6 +29,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} micro_ros
                                       pico_stdlib
+                                      pico_stdio_usb
                                       hardware_adc
                                       freertos_helpers_lib
                                       uros_freertos_helpers_lib
