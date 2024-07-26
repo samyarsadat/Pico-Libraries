@@ -142,6 +142,9 @@ bool adc_select_input_with_mutex(uint8_t channel);
 // ---- Initialize print_uart mutex ----
 void init_print_uart_mutex();
 
+// ---- Enable print_uart() USB override ----
+void print_uart_usb_override();
+
 // ---- Print to STDIO UART function ----
 bool print_uart(std::string msg);
 

@@ -34,6 +34,11 @@
 
 
 
+// ------- Global variables -------
+bool enable_print_uart_usb_override = false;
+
+
+
 // ------- Functions ------- 
 
 // Note: clean_shutdown() must be defined elsewhere!
@@ -173,28 +178,43 @@ void init_print_uart_mutex()
 }
 
 
+// ---- Enable print_uart() USB override ----
+void print_uart_usb_override()
+{
+    enable_print_uart_usb_override = true;
+}
+
+
 // ---- Print to STDIO UART function ----
 bool print_uart(std::string msg)
 {
     // We don't care about the mutex if we're not in a task.
     if (xTaskGetCurrentTaskHandle() == NULL)
     {
-        #ifdef WRITE_LOG_PRINT_UART_OVER_USB_OVERRIDE
-        stdio_usb.out_chars(msg.c_str(), msg.length());
-        #else
-        stdio_uart.out_chars(msg.c_str(), msg.length());
-        #endif
+        if (enable_print_uart_usb_override)
+        {
+            stdio_usb.out_chars(msg.c_str(), msg.length());
+        }
+
+        else
+        {
+            stdio_uart.out_chars(msg.c_str(), msg.length());
+        }
 
         return true;
     }
 
     if (xSemaphoreTake(print_uart_mutex, portMAX_DELAY) == pdTRUE)
     {
-        #ifdef WRITE_LOG_PRINT_UART_OVER_USB_OVERRIDE
-        stdio_usb.out_chars(msg.c_str(), msg.length());
-        #else
-        stdio_uart.out_chars(msg.c_str(), msg.length());
-        #endif
+        if (enable_print_uart_usb_override)
+        {
+            stdio_usb.out_chars(msg.c_str(), msg.length());
+        }
+
+        else
+        {
+            stdio_uart.out_chars(msg.c_str(), msg.length());
+        }
 
         xSemaphoreGive(print_uart_mutex);
         return true;
