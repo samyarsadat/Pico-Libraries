@@ -423,7 +423,10 @@ void publish_diag_report(uint8_t level, std::string_view hw_name, std::string_vi
         pub_item.post_pub_callback = post_publish_diag_msg_destroy;
         pub_item.rt_check_mode = RT_LOG_ONLY_CHECK;
         
-        xQueueSendToBack(pub_queue, (void *) &pub_item, 0);
+        if (xQueueSendToBack(pub_queue, (void *) &pub_item, 0) != pdTRUE)
+        {
+            post_publish_diag_msg_destroy(NULL, NULL, (void *) pub_item_diag.allocated_slot);
+        }
     }
 }
 

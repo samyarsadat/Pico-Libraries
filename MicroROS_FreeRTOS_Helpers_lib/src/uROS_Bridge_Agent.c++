@@ -91,7 +91,7 @@ void uRosBridgeAgent::pre_init(uros_init_function init_function, uros_fini_funct
 // Initialize MicroROS node and executor.
 // This function should be called before any other uROS-related functions.
 // This function is NOT thread-safe.
-void uRosBridgeAgent::uros_init_node(const char *node_name, const char *name_space)
+void uRosBridgeAgent::uros_init_node(const char *node_name, const char *name_space, uint8_t node_domain_id)
 {
     if (!node_initialized)
     {
@@ -99,7 +99,11 @@ void uRosBridgeAgent::uros_init_node(const char *node_name, const char *name_spa
         rcl_allocator = rcl_get_default_allocator();
 
         // Initialize the MicroROS node
-        check_rc(rclc_support_init(&rc_support, 0, NULL, &rcl_allocator), RT_HARD_CHECK);
+        rcl_init_opts = rcl_get_zero_initialized_init_options();
+        check_rc(rcl_init_options_init(&rcl_init_opts, rcl_allocator), RT_HARD_CHECK);
+        check_rc(rcl_init_options_set_domain_id(&rcl_init_opts, (size_t) node_domain_id), RT_HARD_CHECK);
+
+        check_rc(rclc_support_init_with_options(&rc_support, 0, NULL, &rcl_init_opts, &rcl_allocator), RT_HARD_CHECK);
         check_rc(rclc_node_init_default(&rc_node, node_name, name_space, &rc_support), RT_HARD_CHECK);
         
         node_initialized = true;

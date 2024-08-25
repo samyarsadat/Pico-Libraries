@@ -28,7 +28,7 @@
 
 
 // Absolute maximums
-#define MAX_PUBLISH_QUEUE_ITEMS  20
+#define MAX_PUBLISH_QUEUE_ITEMS  15
 
 // Misc.
 #define PUB_AGENT_MEMORY_WORDS  2048

@@ -71,7 +71,7 @@ class uRosBridgeAgent : public Agent
         // Initialize MicroROS node.
         // This function should be called before any other uROS-related functions.
         // This function is NOT thread-safe.
-        void uros_init_node(const char *node_name, const char *name_space);
+        void uros_init_node(const char *node_name, const char *name_space, uint8_t node_domain_id);
 
         // Initialize MicroROS executor.
         // This function should be called after uros_init_node().
@@ -151,6 +151,7 @@ class uRosBridgeAgent : public Agent
         static bool exec_notify_timer_callback(struct repeating_timer *rt);
 
         static uRosBridgeAgent *instance;
+        rcl_init_options_t rcl_init_opts;
         rcl_allocator_t rcl_allocator;
         rcl_node_t rc_node;
         rclc_support_t rc_support;

@@ -284,8 +284,10 @@ bool check_exec_interval(uint32_t &last_call_time_ms, uint16_t max_exec_time_ms,
         {
             std::string report_str = log_msg + " [func: " + func + "]";
             std::vector<diag_kv_pair_item_t> kv_pairs;
-            kv_pairs.push_back(diag_kv_pair_item_t{"actual_time", std::to_string(exec_time_ms) + "ms"});
-            kv_pairs.push_back(diag_kv_pair_item_t{"time_limit", std::to_string(max_exec_time_ms) + "ms"});
+            std::string actual_time_str = std::to_string(exec_time_ms) + "ms";
+            std::string time_limit = std::to_string(max_exec_time_ms) + "ms";
+            kv_pairs.push_back(diag_kv_pair_item_t{"actual_time", actual_time_str});
+            kv_pairs.push_back(diag_kv_pair_item_t{"time_limit", time_limit});
             publish_diag_report(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_TIMERS, report_str, &kv_pairs);
         }
 

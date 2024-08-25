@@ -93,6 +93,11 @@ void uRosPublishingHandler::execute()
         // Blocks indefinitely until an item is available.
         BaseType_t avail = xQueueReceive(publishing_queue, &queue_item, portMAX_DELAY);
 
+        /*if (uxQueueMessagesWaiting(publishing_queue) > 0)
+        {
+            write_log("Messages waiting on queue: " + std::to_string(uxQueueMessagesWaiting(publishing_queue)), LOG_LVL_INFO, FUNCNAME_ONLY);
+        }*/
+
         if (avail == pdTRUE && bridge->get_agent_state() == uRosBridgeAgent::AGENT_CONNECTED && queue_item.publisher != NULL && queue_item.message != NULL)
         {
             if (!check_rc(rcl_publish(queue_item.publisher, queue_item.message, NULL), queue_item.rt_check_mode) && queue_item.failed_callback != NULL)
