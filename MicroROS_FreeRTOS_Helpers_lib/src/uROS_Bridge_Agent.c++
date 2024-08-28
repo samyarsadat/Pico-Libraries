@@ -70,21 +70,21 @@ void uRosBridgeAgent::pre_init(uros_init_function init_function, uros_fini_funct
 
     // Set MicroROS default allocators
     rcl_allocator_t rtos_allocators = rcutils_get_zero_initialized_allocator();
-	rtos_allocators.allocate = uros_rtos_allocate;
-	rtos_allocators.deallocate = uros_rtos_deallocate;
-	rtos_allocators.reallocate = uros_rtos_reallocate;
-	rtos_allocators.zero_allocate = uros_rtos_zero_allocate;
-	check_bool(rcutils_set_default_allocator(&rtos_allocators), RT_HARD_CHECK);
+    rtos_allocators.allocate = uros_rtos_allocate;
+    rtos_allocators.deallocate = uros_rtos_deallocate;
+    rtos_allocators.reallocate = uros_rtos_reallocate;
+    rtos_allocators.zero_allocate = uros_rtos_zero_allocate;
+    check_bool(rcutils_set_default_allocator(&rtos_allocators), RT_HARD_CHECK);
 
     // Set MicroROS transport
-	rmw_uros_set_custom_transport(
-		true,
-		NULL,
-		pico_serial_transport_open,
-		pico_serial_transport_close,
-		pico_serial_transport_write,
-		pico_serial_transport_read
-	);
+    rmw_uros_set_custom_transport(
+        true,
+        NULL,
+        pico_serial_transport_open,
+        pico_serial_transport_close,
+        pico_serial_transport_write,
+        pico_serial_transport_read
+    );
 }
 
 
