@@ -361,6 +361,7 @@ diag_publish_item_t prepare_diag_publish_item(uint8_t level, std::string_view hw
 {
     int allocated_slot = allocate_slots();
     diag_publish_item_t pub_item;
+    pub_item.allocated_slot = allocated_slot;
 
     if (allocated_slot > -1)
     {
@@ -378,10 +379,10 @@ diag_publish_item_t prepare_diag_publish_item(uint8_t level, std::string_view hw
         {
             write_log("Array data access mutex acquisition failed!", LOG_LVL_FATAL, FUNCNAME_ONLY);
         }
+
+        pub_item.diag_msg = &diagnostics_msgs_array[allocated_slot];
     }
 
-    pub_item.diag_msg = &diagnostics_msgs_array[allocated_slot];
-    pub_item.allocated_slot = allocated_slot;
     return pub_item;
 }
 
@@ -415,17 +416,27 @@ void publish_diag_report(uint8_t level, std::string_view hw_name, std::string_vi
             check_rc() calling publish_diag_report() and then the same thing happening over and over again.
         */
         diag_publish_item_t pub_item_diag = prepare_diag_publish_item(level, hw_name, hw_id, msg, kv_pairs);
-        uRosPublishingHandler::PublishItem_t pub_item;
-        
-        pub_item.message = pub_item_diag.diag_msg;
-        pub_item.publisher = &diagnostics_pub;
-        pub_item.post_pub_user_param = (void *) pub_item_diag.allocated_slot;
-        pub_item.post_pub_callback = post_publish_diag_msg_destroy;
-        pub_item.rt_check_mode = RT_LOG_ONLY_CHECK;
-        
-        if (xQueueSendToBack(pub_queue, (void *) &pub_item, 0) != pdTRUE)
+
+        if (pub_item_diag.allocated_slot >= 0)
         {
-            post_publish_diag_msg_destroy(NULL, NULL, (void *) pub_item_diag.allocated_slot);
+            uRosPublishingHandler::PublishItem_t pub_item;
+            
+            pub_item.message = pub_item_diag.diag_msg;
+            pub_item.publisher = &diagnostics_pub;
+            pub_item.post_pub_user_param = (void *) pub_item_diag.allocated_slot;
+            pub_item.post_pub_callback = post_publish_diag_msg_destroy;
+            pub_item.rt_check_mode = RT_LOG_ONLY_CHECK;
+            
+            if (xQueueSendToBack(pub_queue, (void *) &pub_item, 0) != pdTRUE)
+            {
+                post_publish_diag_msg_destroy(NULL, NULL, (void *) pub_item_diag.allocated_slot);
+                write_log("Failed to add diagnostic message to publication queue!", LOG_LVL_ERROR, FUNCNAME_ONLY);
+            }
+        }
+
+        else
+        {
+            write_log("Diagnostic message slot allocation failed.", LOG_LVL_ERROR, FUNCNAME_ONLY);
         }
     }
 }
