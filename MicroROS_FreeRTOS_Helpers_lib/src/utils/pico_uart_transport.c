@@ -16,7 +16,11 @@ bool pico_serial_transport_open(struct uxrCustomTransport *transport)
         require_init = false;
     }*/
 
-    return stdio_usb_connected();
+    // Don't check for USB connection, as some programs might be using
+    // standard UART pins and not UART over USB. In such cases, this
+    // function would return false and microros wouldn't proceed.
+    //return stdio_usb_connected();
+    return true;
 }
 
 bool pico_serial_transport_close(struct uxrCustomTransport *transport)
