@@ -32,17 +32,17 @@
 
 
 // Absolute maximums
-#define MAX_PUBLISHERS   8
-#define MAX_SUBSCRIBERS  2
-#define MAX_SERVICES     7
-#define MAX_TIMERS       10
-#define MAX_EXEC_TIME    125
+#define MAX_PUBLISHERS         8
+#define MAX_SUBSCRIBERS        2
+#define MAX_SERVICES           7
+#define MAX_TIMERS             10
+#define DEFAULT_MAX_EXEC_TIME  125
 
 // Misc.
-#define EXECUTOR_EXEC_INTERVAL_MS  100
-#define EXECUTOR_TIMEOUT_MS        40
-#define BRIDGE_AGENT_MEMORY_WORDS  2048
-#define BRIDGE_AGENT_NAME          "uROS_Bridge_Agent"
+#define DEFAULT_EXECUTOR_EXEC_INTERVAL_MS  100
+#define DEFAULT_EXECUTOR_TIMEOUT_MS        40
+#define BRIDGE_AGENT_MEMORY_WORDS          2048
+#define BRIDGE_AGENT_NAME                  "uROS_Bridge_Agent"
 
 
 // uROS Bridge Agent class
@@ -66,7 +66,9 @@ class uRosBridgeAgent : public Agent
         static uRosBridgeAgent* get_instance();
 
         // Pre-init configuration
-        void pre_init(uros_init_function init_function, uros_fini_function fini_function, uros_post_exec_function post_exec_function);
+        void pre_init(uros_init_function init_function, uros_fini_function fini_function, uros_post_exec_function post_exec_function,
+                      uint16_t execution_interval_ms = DEFAULT_EXECUTOR_EXEC_INTERVAL_MS, uint16_t execution_interval_limit_ms = DEFAULT_MAX_EXEC_TIME,
+                      uint16_t executor_timeout_ms = DEFAULT_EXECUTOR_TIMEOUT_MS);
 
         // Initialize MicroROS node.
         // This function should be called before any other uROS-related functions.
@@ -145,6 +147,11 @@ class uRosBridgeAgent : public Agent
 
         // MicroROS agent state
         UROS_STATE current_uros_state;
+
+        // Execution interval
+        uint16_t exec_interval_ms;
+        uint16_t exec_interval_limit_ms;
+        uint16_t exectr_timeout_ms;
 
         // Hardware timer for execution timing
         struct repeating_timer exec_timer_rt;

@@ -62,11 +62,15 @@ uRosBridgeAgent *uRosBridgeAgent::get_instance()
 
 
 // Pre-init configuration
-void uRosBridgeAgent::pre_init(uros_init_function init_function, uros_fini_function fini_function, uros_post_exec_function post_exec_function)
+void uRosBridgeAgent::pre_init(uros_init_function init_function, uros_fini_function fini_function, uros_post_exec_function post_exec_function,
+                               uint16_t execution_interval_ms, uint16_t execution_interval_limit_ms, uint16_t executor_timeout_ms)
 {
     init_func = init_function;
     fini_func = fini_function;
     post_exec_func = post_exec_function;
+    exec_interval_ms = execution_interval_ms;
+    exec_interval_limit_ms = execution_interval_limit_ms;
+    exectr_timeout_ms = executor_timeout_ms;
 
     // Set MicroROS default allocators
     rcl_allocator_t rtos_allocators = rcutils_get_zero_initialized_allocator();
@@ -353,7 +357,7 @@ uRosBridgeAgent::UROS_STATE uRosBridgeAgent::get_agent_state()
 void uRosBridgeAgent::execute()
 {
     write_log("Starting MicroROS executor notification timer...", LOG_LVL_INFO, FUNCNAME_ONLY);
-    add_repeating_timer_ms(EXECUTOR_EXEC_INTERVAL_MS, uRosBridgeAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+    add_repeating_timer_ms(exec_interval_ms, uRosBridgeAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
 
     uint32_t last_exec_time = 0;
     current_uros_state = WAITING_FOR_AGENT;
@@ -380,8 +384,8 @@ void uRosBridgeAgent::execute()
                 
                 if (current_uros_state == AGENT_CONNECTED) 
                 {
-                    check_exec_interval(last_exec_time, MAX_EXEC_TIME, "Executor execution time exceeded limits!", true);
-                    bool exec_failed = check_rc(rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(EXECUTOR_TIMEOUT_MS)), RT_LOG_ONLY_CHECK);
+                    check_exec_interval(last_exec_time, exec_interval_limit_ms, "Executor execution time exceeded limits!", true);
+                    bool exec_failed = check_rc(rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(exectr_timeout_ms)), RT_LOG_ONLY_CHECK);
 
                     if (post_exec_func != NULL && !exec_failed)
                     {
