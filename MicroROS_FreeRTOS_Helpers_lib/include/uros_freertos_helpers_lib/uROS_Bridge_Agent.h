@@ -99,7 +99,7 @@ class uRosBridgeAgent : public Agent
 
         // Initialize a timer.
         // This function is NOT thread-safe.
-        bool init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback);
+        bool init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback, bool autostart = false);
 
         // Add a subscriber to the executor.
         // This function is NOT thread-safe.

@@ -239,11 +239,11 @@ bool uRosBridgeAgent::init_service(rcl_service_t *service, const rosidl_service_
 // Initialize a timer.
 // Call this before uros_init_executor().
 // This function is NOT thread-safe.
-bool uRosBridgeAgent::init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback)
+bool uRosBridgeAgent::init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback, bool autostart)
 {
     if (timers.size() < MAX_TIMERS)
     {
-        check_rc(rclc_timer_init_default(timer, &rc_support, RCL_MS_TO_NS(period), callback), RT_HARD_CHECK);
+        check_rc(rclc_timer_init_default2(timer, &rc_support, RCL_MS_TO_NS(period), callback, autostart), RT_HARD_CHECK);
         timers.push_back(timer);
         executor_handles ++;
         return true;
