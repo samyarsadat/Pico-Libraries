@@ -1,8 +1,6 @@
-#  Pico Libraries (originally from The ROS robot project) - Library top level CMake config
-#  FreeRTOS helpers/utilities.
-#
-#  Copyright 2024 Samyar Sadat Akhavi
-#  Written by Samyar Sadat Akhavi, 2024.
+#  The ROS robot project (Helpers Library) - Library top level CMake config
+#  Copyright 2022-2024 Samyar Sadat Akhavi
+#  Written by Samyar Sadat Akhavi, 2022-2024.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,7 +28,7 @@ endif ()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set project name and C/C++ standards
-project(freertos_helpers_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
+project(utils_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -41,8 +39,8 @@ pico_sdk_init()
 add_subdirectory(src)
 
 # CMake flags
-set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-add_compile_options(-Wall -Wextra -Wpedantic)
+set(FLAGS "${CMAKE_C_FLAGS} -mthumb -ffunction-sections -fdata-sections")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
-message("Configured FreeRTOS Helpers Library build. (${PROJECT_NAME} - v${PROJECT_VERSION})")
+message("Configured ${PROJECT_NAME} library build for v${PROJECT_VERSION}")

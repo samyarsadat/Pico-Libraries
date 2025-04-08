@@ -1,9 +1,9 @@
 /*
-    Pico Libraries (originally from The ROS robot project)
-    Agent object that abstracts FreeRTOS tasks.
+    Pico Libraries
+    Agent object abstraction for FreeRTOS tasks.
     
-    Copyright 2024 Samyar Sadat Akhavi
-    Written by Samyar Sadat Akhavi, 2024.
+    Copyright 2024-2025 Samyar Sadat Akhavi
+    Written by Samyar Sadat Akhavi, 2024-2025.
     Heavily inspired by: https://github.com/jondurrant/RPIPicoFreeRTOSuROSPubSub
  
     This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
-
 
 #pragma once
 #include "FreeRTOS.h"
@@ -41,9 +40,6 @@ class Agent
         // Destructor
         virtual ~Agent();
 
-
-        // ---- Functions ----
-
         // Start the agent (FreeRTOS task)
         virtual bool start(UBaseType_t priority, UBaseType_t core_affinity_mask, bool set_core_affinity);
 
@@ -57,10 +53,7 @@ class Agent
         // Get the FreeRTOS task that is being used by the agent.
         TaskHandle_t get_rtos_task();
 
-
     protected:
-        // ---- Functions ----
-
         // Static internal function used by FreeRTOS to start
         // the agent task.
         static void vTask(void *parameters);
@@ -69,15 +62,7 @@ class Agent
         // Code that is to be executed by the task goes here.
         virtual void execute() = 0;  // Declare as pure virtual function.
 
-
-        // ---- Variables ----
-
-        // The FreeRTOS task handle
-        TaskHandle_t task_handle = NULL;
-
-        // The agent (task) name.
-        char agent_name[MAX_NAME_LENGTH];
-
-        // The static stack depth required by the agent.
-        configSTACK_DEPTH_TYPE stack_depth;
+        TaskHandle_t task_handle = NULL;     // The FreeRTOS task handle.
+        char agent_name[MAX_NAME_LENGTH];    // The agent (task) name.
+        configSTACK_DEPTH_TYPE stack_depth;  // The static stack depth required by the agent.
 };
