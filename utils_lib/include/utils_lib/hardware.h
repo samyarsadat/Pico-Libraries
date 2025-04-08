@@ -38,9 +38,9 @@ void init_pin(uint pin, PIN_CONFIG_MODE mode);
 // gpio_put function but for PWM-enbaled pins
 void gpio_put_pwm(uint pin, uint16_t level);
 
-// Returns the temperature measured by the RP2040's internal sensor in Celsius
+// Returns the temperature measured by the RP2040/RP2350's internal sensor in Celsius
 // NOTE: The ADC must be initialized and the temperature sensor must be enabled!
-float get_rp2040_temp();
+float get_proc_temp();
 
 // Returns the ADC channel of a given GPIO pin
 int get_gpio_adc_channel(uint gpio);

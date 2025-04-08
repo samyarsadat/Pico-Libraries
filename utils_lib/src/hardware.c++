@@ -80,7 +80,7 @@ void gpio_put_pwm(uint pin, uint16_t level) {
     }
 }
 
-// Returns the temperature measured by the RP2040's internal sensor in Celsius
+// Returns the temperature measured by the RP2040/RP2350's internal sensor in Celsius
 // NOTE: The ADC must be initialized and the temperature sensor must be enabled!
 float get_proc_temp() {
     adc_select_input(ADC_TEMPERATURE_CHANNEL_NUM);
