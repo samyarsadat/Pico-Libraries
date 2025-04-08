@@ -101,5 +101,5 @@ int get_gpio_adc_channel(uint gpio) {
     }
     #endif
     
-    return -1;  // Non-ADC pin provided
+    return -1;  // Non-ADC pin provided or platform undefined.
 }

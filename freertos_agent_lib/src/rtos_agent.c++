@@ -42,9 +42,6 @@ Agent::~Agent() {
     stop();
 }
 
-
-// ---- Methods ----
-
 // Start the agent (FreeRTOS task)
 // Pass false to set_core_affinity to let FreeRTOS decide.
 bool Agent::start(UBaseType_t priority = tskIDLE_PRIORITY, UBaseType_t core_affinity_mask = (1 << 0), bool set_core_affinity = false) {

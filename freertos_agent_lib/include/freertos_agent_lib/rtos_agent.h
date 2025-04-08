@@ -28,10 +28,8 @@
 // Max agent name length
 #define MAX_NAME_LENGTH  25
 
-
 // Agent class
-class Agent
-{
+class Agent {
     public:
         // Constructor
         // (name is intentionally not a std::string to avoid dynamic memory alloc.)
