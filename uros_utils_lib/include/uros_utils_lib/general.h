@@ -29,6 +29,10 @@
 #include "queue.h"
 
 
+// MicroROS agent detection
+#define UROS_AGENT_FIND_TIMEOUT_MS  100
+#define UROS_AGENT_FIND_ATTEMPTS    10
+
 // Return checker modes Enum 
 enum RT_CHECK_MODE {
     RT_HARD_CHECK, 
@@ -38,17 +42,18 @@ enum RT_CHECK_MODE {
 
 
 // RCL return checker
-bool check_rc(rcl_ret_t rctc, RT_CHECK_MODE mode, const char *func=__func__, uint16_t line=__LINE__);
+bool check_rc(const rcl_ret_t rctc, const RT_CHECK_MODE mode, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 // Return checker, except for functions that return a boolean
-bool check_bool(bool function, RT_CHECK_MODE mode, const char *func=__func__, uint16_t line=__LINE__);
+bool check_bool(const bool function, const RT_CHECK_MODE mode, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 /*  
     Execution interval checker
     Checks the amount of time passed since the last time it was called (with the specific time storage varialble provided)
     Returns false if the execution time has exceeded the specified limit
 */
-bool check_exec_interval(uint32_t &last_call_time_ms, uint16_t max_exec_time_ms, std::string log_msg, bool publish_diag = false, const char *func=__builtin_FUNCTION());
+bool check_exec_interval(uint32_t &last_call_time_ms, const uint16_t max_exec_time_ms, const char* log_msg, bool pub_diag=false,
+                         const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 // Pings the MicroROS agent
-bool ping_agent();
+bool ping_agent(const int timeout_ms=UROS_AGENT_FIND_TIMEOUT_MS, const uint8_t attempts=UROS_AGENT_FIND_ATTEMPTS);

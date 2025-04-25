@@ -25,7 +25,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} micro_ros
-                                      FreeRTOS-Kernel)
+                                      FreeRTOS-Kernel
+                                      pico_log_lib)
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

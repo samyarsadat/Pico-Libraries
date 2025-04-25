@@ -22,8 +22,3 @@
 #pragma once
 #include "uros_common/diag_msgs.h"
 #include "uros_common/diag_definitions.h"
-
-
-/* ---- MicroROS agent detection ---- */
-#define UROS_AGENT_FIND_TIMEOUT_MS  100
-#define UROS_AGENT_FIND_ATTEMPTS    10

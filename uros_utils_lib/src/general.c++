@@ -20,19 +20,18 @@
 */
 
 #include "uros_utils_lib/general.h"
-#include "uros_utils_lib/diag_helper.h"
+#include "pico_log_lib/logger.h"
 #include <rmw_microros/rmw_microros.h>
 #include "semphr.h"
 
 
 // Note: clean_shutdown() must be defined elsewhere!
 extern void clean_shutdown();
+extern Logger logger;
 
 
 bool check_rc(rcl_ret_t rctc, RT_CHECK_MODE mode, const char *func, uint16_t line) {
     if (rctc != RCL_RET_OK) {
-        char buffer[70];
-
         switch (mode) {
             case RT_HARD_CHECK:
                 snprintf(buffer, sizeof(buffer), "RCL Return check failed: [code: %d, RT_HARD_CHECK]", rctc);
@@ -50,9 +49,11 @@ bool check_rc(rcl_ret_t rctc, RT_CHECK_MODE mode, const char *func, uint16_t lin
                 write_log(buffer, LOG_LVL_WARN, FUNCNAME_LINE_ONLY, func, "", line);
                 break;
         }
+
+        return false;
     }
 
-    return (rctc != RCL_RET_OK);
+    return true;
 }
 
 bool check_bool(bool function, RT_CHECK_MODE mode, const char *func, uint16_t line) {
@@ -76,7 +77,8 @@ bool check_bool(bool function, RT_CHECK_MODE mode, const char *func, uint16_t li
     return function;
 }
 
-bool check_exec_interval(uint32_t &last_call_time_ms, uint16_t max_exec_time_ms, std::string log_msg, bool publish_diag, const char *func) {
+bool check_exec_interval(uint32_t &last_call_time_ms, const uint16_t max_exec_time_ms, const char* log_msg, bool pub_diag,
+                         const char* func, const char* file, const uint16_t line) {
     // Initialize last_call_time_ms if it's 0 (first call).
     if (last_call_time_ms == 0) { 
         last_call_time_ms = time_us_32() / 1000; 
@@ -91,15 +93,7 @@ bool check_exec_interval(uint32_t &last_call_time_ms, uint16_t max_exec_time_ms,
         log_msg = log_msg + " [act: " + std::to_string(exec_time_ms) + "ms, lim: " + std::to_string(max_exec_time_ms) + "ms]";
         write_log(log_msg, LOG_LVL_WARN, FUNCNAME_ONLY, func);
 
-        if (publish_diag) {
-            std::string report_str = log_msg + " [func: " + func + "]";
-            std::vector<diag_kv_pair_item_t> kv_pairs;
-            std::string actual_time_str = std::to_string(exec_time_ms) + "ms";
-            std::string time_limit = std::to_string(max_exec_time_ms) + "ms";
-            kv_pairs.push_back(diag_kv_pair_item_t{"actual_time", actual_time_str});
-            kv_pairs.push_back(diag_kv_pair_item_t{"time_limit", time_limit});
-            publish_diag_report(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_TIMERS, report_str, &kv_pairs);
-        }
+        /* DIAG PUB */
 
         return false;
     }
@@ -107,6 +101,6 @@ bool check_exec_interval(uint32_t &last_call_time_ms, uint16_t max_exec_time_ms,
     return true;
 }
 
-bool ping_agent() {
-    return (rmw_uros_ping_agent(uros_agent_find_timeout_ms, uros_agent_find_attempts) == RMW_RET_OK);
+bool ping_agent(const int timeout_ms, const uint8_t attempts) {
+    return (rmw_uros_ping_agent(timeout_ms, attempts) == RMW_RET_OK);
 }
