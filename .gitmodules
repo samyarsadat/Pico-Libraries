@@ -1,0 +1,3 @@
+[submodule "Pico Log Library"]
+	path = pico_log_lib
+	url = https://github.com/samyarsadat/Pico-Log-Library
