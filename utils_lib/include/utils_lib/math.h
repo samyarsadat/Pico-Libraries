@@ -27,21 +27,35 @@ using namespace std;
 
 
 // Arduino map-like function
-float map(float input, int in_min, int in_max, int out_min, int out_max);
+template <typename T>
+T map(const T input, const int in_min, const int in_max, const int out_min, const int out_max);
 
 // Adjustable truncate function
-float truncate_adj(float input, int trunc_amount);
+template <typename T>
+T truncate_adj(const T input, const int trunc_amount);
 
 // Calculates the mean (average) of the numbers in a float vector
-float calculate_mean(vector<float> &numbers);
+template <typename T>
+float arr_mean(const vector<T> &numbers);
+template <typename T, size_t N>
+float arr_mean(const T (&numbers)[N]);
 
 // Calculates the standard deviation of the numbers in a float vector
-float calculate_standard_deviation(vector<float> &numbers, float numbers_mean);
+template <typename T>
+float arr_std_dev(const vector<T> &numbers, const float mean);
+template <typename T, size_t N>
+float arr_std_dev(const T (&numbers)[N], const float mean);
 
 // Finds "outliers" in-between the numbers in a float vector using the Z-Score (Standard Score) method
 // It returns a boolean vector (with the same size as the input vector) that indicates the "outliers" by returning their slots as true
-vector<bool> standard_score_check(vector<float> &numbers, float z_score_threshhold);
+template <typename T>
+vector<bool> std_score_check(const vector<T> &numbers, const float z_score_threshhold);
+template <typename T, size_t N>
+void std_score_check(bool (&result)[N], const T (&numbers)[N], const float z_score_threshhold);
 
 // Converts Euler angles to a quaternion
 // Output: [x, y, z, w]
-vector<float> euler_to_quaternion(float roll, float pitch, float yaw);
+template <typename T>
+vector<T> euler_to_quaternion(const T roll, const T pitch, const T yaw);
+template <typename T, size_t N>
+void euler_to_quaternion(const T (&result)[N], const T roll, const T pitch, const T yaw);

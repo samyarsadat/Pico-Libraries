@@ -29,73 +29,129 @@ using namespace std;
 // TODO: Better usage information
 
 // Arduino map-like function
-float map(float input, int in_min, int in_max, int out_min, int out_max) {
-    return (float) (((input - in_min) * (out_max - out_min)) / (in_max - in_min)) + out_min;
+template <typename T>
+T map(const T input, const int in_min, const int in_max, const int out_min, const int out_max) {
+    return static_cast<T>((input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
 }
 
 // Adjustable truncate function
-float truncate_adj(float input, int trunc_amount) {
-    return round(input * pow(10, trunc_amount)) / pow(10, trunc_amount);
+template <typename T>
+T truncate_adj(T input, int trunc_amount) {
+    return static_cast<T>(round(input * pow(10, trunc_amount)) / pow(10, trunc_amount));
 }
 
-// Calculates the mean (average) of the numbers in a float vector
-float calculate_mean(vector<float> &numbers) {
-    float total;
-    for (auto &num : numbers) {
+// Calculates the mean (average) of the numbers in a float vector/array
+template <typename T>
+float arr_mean(const vector<T> &numbers) {
+    float total = 0.0f;
+    for (const T &num : numbers) {
         total += num;
     }
 
     return total / numbers.size();
 }
 
-// Calculates the standard deviation of the numbers in a float vector
-float calculate_standard_deviation(vector<float> &numbers, float numbers_mean) {
-    float deviation_total;
-    for (auto &num : numbers) {
-        deviation_total += pow(num - numbers_mean, 2);
+template <typename T, size_t N>
+float arr_mean(const T (&numbers)[N]) {
+    float total = 0.0f;
+    for (size_t i = 0, i < N, i++) {
+        total += numbers[i];
+    }
+
+    return total / N;
+}
+
+// Calculates the standard deviation of the numbers in a float vector/array
+template <typename T>
+float arr_std_dev(const vector<T> &numbers, const float mean) {
+    float deviation_total = 0.0f;
+    for (const T &num : numbers) {
+        deviation_total += pow(num - mean, 2);
     }
 
     return sqrt(deviation_total / numbers.size());
 }
 
-// Finds "outliers" in-between the numbers in a float vector using the Z-Score (Standard Score) method
-// It returns a boolean vector (with the same size as the input vector) that indicates the "outliers" by returning their slots as true
-vector<bool> standard_score_check(vector<float> &numbers, float z_score_threshhold) {
-    float mean = calculate_mean(numbers);
-    float standard_deviation = calculate_standard_deviation(numbers, mean);
-    vector<bool> outliers;
-    
-    for (auto &num : numbers) {
-        if (abs((num - mean) / standard_deviation) > z_score_threshhold) {
-            outliers.push_back(true);
-        } else {
-            outliers.push_back(false);
-        }
+template <typename T, size_t N>
+float arr_std_dev(const T (&numbers)[N], const float mean) {
+    float deviation_total = 0.0f;
+    for (size_t i = 0, i < N, i++) {
+        deviation_total += pow(numbers[i] - mean, 2);
     }
 
-    return outliers;
+    return sqrt(deviation_total / N);
+}
+
+// Finds "outliers" in-between the numbers in a float vector/array using the Z-Score (Standard Score) method
+// It returns a boolean vector/array (with the same size as the input vector/array) that indicates the "outliers" by returning their slots as true
+template <typename T>
+vector<bool> std_score_check(const vector<T> &numbers, const float z_score_threshhold) {
+    const float mean = arr_mean(numbers);
+    const float std_dev = arr_std_dev(numbers, mean);
+    vector<bool> result;
+    
+    for (const T &num : numbers) {
+        result.push_back(abs((num - mean) / std_dev) > z_score_threshhold);
+    }
+
+    return result;
+}
+
+template <typename T, size_t N>
+void std_score_check(bool (&result)[N], const T (&numbers)[N], const float z_score_threshhold) {
+    const float mean = arr_mean(numbers);
+    const float std_dev = arr_std_dev(numbers, mean);
+    
+    for (size_t i = 0, i < N, i++) {
+        result[i] = (abs((numbers[i] - mean) / std_dev) > z_score_threshhold);
+    }
 }
 
 // Converts Euler angles to a quaternion
 // Output: [x, y, z, w]
-vector<float> euler_to_quaternion(float roll, float pitch, float yaw) {
-    vector<float> quaternion;
+template <typename T>
+vector<T> euler_to_quaternion(const T roll, const T pitch, const T yaw) {
+    vector<T> result;
     
-    float yaw_half = yaw * 0.5;
-    float pitch_half = pitch * 0.5;
-    float roll_half = roll * 0.5;
+    T h_yaw = yaw * static_cast<T>(0.5);
+    T h_pitch = pitch * static_cast<T>(0.5);
+    T h_roll = roll * static_cast<T>(0.5);
 
-    float cy = cos(yaw_half);
-    float sy = sin(yaw_half);
-    float cp = cos(pitch_half);
-    float sp = sin(pitch_half);
-    float cr = cos(roll_half);
-    float sr = sin(roll_half);
+    T cy = cos(h_yaw);
+    T sy = sin(h_yaw);
+    T cp = cos(h_pitch);
+    T sp = sin(h_pitch);
+    T cr = cos(h_roll);
+    T sr = sin(h_roll);
 
-    quaternion.push_back(sr * cp * cy - cr * sp * sy);  // x
-    quaternion.push_back(cr * sp * cy + sr * cp * sy);  // y
-    quaternion.push_back(cr * cp * sy - sr * sp * cy);  // z
-    quaternion.push_back(cr * cp * cy + sr * sp * sy);  // w
+    result.resize(4);
+    result[0] = sr * cp * cy - cr * sp * sy;  // x
+    result[1] = cr * sp * cy + sr * cp * sy;  // y
+    result[2] = cr * cp * sy - sr * sp * cy;  // z
+    result[3] = cr * cp * cy + sr * sp * sy;  // w
 
-    return quaternion;
+    return result;
+}
+
+template <typename T, size_t N>
+void euler_to_quaternion(const T (&result)[N], const T roll, const T pitch, const T yaw) {
+    if (N < 4) {
+        return;
+    }
+    
+    T h_yaw = yaw * static_cast<T>(0.5);
+    T h_pitch = pitch * static_cast<T>(0.5);
+    T h_roll = roll * static_cast<T>(0.5);
+
+    T cy = cos(h_yaw);
+    T sy = sin(h_yaw);
+    T cp = cos(h_pitch);
+    T sp = sin(h_pitch);
+    T cr = cos(h_roll);
+    T sr = sin(h_roll);
+
+    result[0] = sr * cp * cy - cr * sp * sy;  // x
+    result[1] = cr * sp * cy + sr * cp * sy;  // y
+    result[2] = cr * cp * sy - sr * sp * cy;  // z
+    result[3] = cr * cp * cy + sr * sp * sy;  // w
 }

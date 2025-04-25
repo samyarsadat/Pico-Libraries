@@ -23,13 +23,14 @@
 #include "utils_lib/hardware.h"
 #include "hardware/adc.h"
 #include "hardware/pwm.h"
+#include "hardware/watchdog.h"
 
 
 // ---- Functions ----
 // TODO: Better usage information
 
 // Arduino pinMode-like function
-void init_pin(uint pin, PIN_CONFIG_MODE mode) {
+void init_pin(uint pin, PIN_CONFIG_MODE_t mode) {
     switch(mode) {
         case OUTPUT:
             gpio_init(pin);
@@ -84,8 +85,8 @@ void gpio_put_pwm(uint pin, uint16_t level) {
 // NOTE: The ADC must be initialized and the temperature sensor must be enabled!
 float get_proc_temp() {
     adc_select_input(ADC_TEMPERATURE_CHANNEL_NUM);
-    double reading_volts = adc_read() * adc_conversion_factor;
-    float reading_celsius = 27 - (reading_volts - 0.706) / 0.001721;  // Formula is valid for RP2040 and RP2350.
+    const double reading_volts = adc_read() * adc_conversion_factor;
+    const float reading_celsius = 27 - (reading_volts - 0.706) / 0.001721;  // Formula is valid for RP2040 and RP2350.
     return reading_celsius;
 }
 
@@ -102,4 +103,11 @@ int get_gpio_adc_channel(uint gpio) {
     #endif
     
     return -1;  // Non-ADC pin provided or platform undefined.
+}
+
+// Resets the pico using the watchdog timer
+void watchdog_reset() {
+    watchdog_disable();
+    watchdog_enable(1, true);
+    while (1);  // Wait for the watchdog to reset the system.
 }

@@ -28,15 +28,24 @@ using namespace std;
 // TODO: Better usage information
 
 // Get a string representation of a boolean array
-string bool_array_as_str(bool bool_array[], uint16_t array_size) {
+template <typename T, size_t N>
+string bool_arr_as_str(const T (&vals)[N]) {
     string ret_str = "[";
-    for (uint16_t i = 0; i < array_size; i++) {
-        if (i < array_size - 1) {
-            ret_str += bool_array[i] ? "true, " : "false, ";
-        } else {
-            ret_str += bool_array[i] ? "true]" : "false]";
-        }
+    for (size_t i = 0; i < N - 1; i++) {
+        ret_str += vals[i] ? "true, " : "false, ";
     }
 
+    ret_str += vals[N - 1] ? "true]" : "false]";
+    return ret_str;
+}
+
+template <typename T>
+string bool_arr_as_str(const vector<T> vals) {
+    string ret_str = "[";
+    for (size_t i = 0; i < vals.size() - 1; i++) {
+        ret_str += vals[i] ? "true, " : "false, ";
+    }
+
+    ret_str += vals[vals.size() - 1] ? "true]" : "false]";
     return ret_str;
 }

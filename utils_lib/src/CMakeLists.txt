@@ -17,11 +17,10 @@
 #  along with this program.  If not, see <https: www.gnu.org/licenses/>.
 
 
-# Set minimum required version of CMake
-cmake_minimum_required(VERSION 3.12)
-
 # Add source files
-add_library(${PROJECT_NAME} hardware.c++ math.c++ misc.c++)
+add_library(${PROJECT_NAME} hardware.c
+                            math.c++
+                            misc.c++)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
@@ -32,4 +31,4 @@ target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       hardware_adc)
 
 # Enable all warnings
-target_compile_definitions(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

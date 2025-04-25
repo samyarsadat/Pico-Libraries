@@ -22,7 +22,6 @@
 
 #pragma once
 #include "pico/stdlib.h"
-using namespace std;
 
 
 // ---- Definitions ----
@@ -31,9 +30,18 @@ using namespace std;
 
 
 // Arduino pinMode-like function
-enum PIN_CONFIG_MODE {OUTPUT, OUTPUT_PWM, INPUT, INPUT_PULLUP, INPUT_PULLDOWN, INPUT_ADC, PROT_I2C, PROT_UART};
-enum PIN_STATE {LOW, HIGH};
-void init_pin(uint pin, PIN_CONFIG_MODE mode);
+enum PIN_CONFIG_MODE {
+    OUTPUT, 
+    OUTPUT_PWM, 
+    INPUT, 
+    INPUT_PULLUP, 
+    INPUT_PULLDOWN, 
+    INPUT_ADC, 
+    PROT_I2C, 
+    PROT_UART
+};
+typedef enum PIN_CONFIG_MODE PIN_CONFIG_MODE_t;
+void init_pin(uint pin, PIN_CONFIG_MODE_t mode);
 
 // gpio_put function but for PWM-enbaled pins
 void gpio_put_pwm(uint pin, uint16_t level);
@@ -44,3 +52,6 @@ float get_proc_temp();
 
 // Returns the ADC channel of a given GPIO pin
 int get_gpio_adc_channel(uint gpio);
+
+// Resets the pico using the watchdog timer
+void watchdog_reset();

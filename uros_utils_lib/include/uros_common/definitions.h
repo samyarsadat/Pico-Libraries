@@ -1,6 +1,6 @@
 /*
-    Pico Libraries (originally from The ROS robot project) - Local Helper/commonly used functions
-    Common diagnostics Hardware Name/ID definitions
+    Pico Libraries (originally from The ROS robot project)
+    Common program definitions
     
     Copyright 2024 Samyar Sadat Akhavi
     Written by Samyar Sadat Akhavi, 2024.
@@ -20,16 +20,10 @@
 */
 
 #pragma once
+#include "uros_common/diag_msgs.h"
+#include "uros_common/diag_definitions.h"
 
 
-// ------- Diagnostics Hardware Names -------
-#define DIAG_NAME_SYSTEM         "system"   // Firmware-related diagnostics
-#define DIAG_NAME_MCU            "mcus"
-
-
-// ------- Diagnostics Hardware IDs -------
-
-// ---- System ----
-#define DIAG_ID_SYS_GENERAL     "system_general"
-#define DIAG_ID_SYS_TIMERS      "system_timers"
-#define DIAG_ID_SYS_UROS        "microros"
+/* ---- MicroROS agent detection ---- */
+#define UROS_AGENT_FIND_TIMEOUT_MS  100
+#define UROS_AGENT_FIND_ATTEMPTS    10

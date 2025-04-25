@@ -1,8 +1,7 @@
-#  Pico Libraries - Library top level CMake config
-#  Agent object abstraction for FreeRTOS tasks.
-#
-#  Copyright 2024-2025 Samyar Sadat Akhavi
-#  Written by Samyar Sadat Akhavi, 2024-2025.
+#  Pico Libraries (originally from The ROS robot project)
+#  ADC locking library - Library top level CMake config
+#  Copyright 2024 Samyar Sadat Akhavi
+#  Written by Samyar Sadat Akhavi, 2024.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,7 +29,7 @@ endif ()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set project name and C/C++ standards
-project(freertos_agent_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
+project(adc_lock_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 

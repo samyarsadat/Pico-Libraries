@@ -1,10 +1,9 @@
 /*
-    Pico Libraries - Helper/commonly used functions
-    These are general misc. functions that can be used in any other program.
-    They are not program-specific.
+    Pico Libraries (originally from The ROS robot project) - Local Helper/commonly used functions
+    Common diagnostics Hardware Name/ID definitions
     
-    Copyright 2022-2024 Samyar Sadat Akhavi
-    Written by Samyar Sadat Akhavi, 2022-2025.
+    Copyright 2024 Samyar Sadat Akhavi
+    Written by Samyar Sadat Akhavi, 2024.
  
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,14 +20,13 @@
 */
 
 #pragma once
-#include "pico/stdlib.h"
-#include <string>
-#include <vector>
-using namespace std;
 
 
-// ---- Get a string representation of a boolean array ----
-template <typename T>
-string bool_arr_as_str(const vector<T> vals);
-template <typename T, size_t N>
-string bool_arr_as_str(const T (&vals)[N]);
+/* ---- Diagnostics Hardware Names ---- */
+#define DIAG_NAME_SYSTEM     "system"   // Firmware-related diagnostics
+#define DIAG_NAME_MCU        "mcus"
+
+/* ---- Diagnostics Hardware IDs ---- */
+#define DIAG_ID_SYS_GENERAL  "system_general"
+#define DIAG_ID_SYS_TIMERS   "system_timers"
+#define DIAG_ID_SYS_UROS     "microros"

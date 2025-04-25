@@ -39,8 +39,8 @@ pico_sdk_init()
 add_subdirectory(src)
 
 # CMake flags
-set(FLAGS "${CMAKE_C_FLAGS} -mthumb -ffunction-sections -fdata-sections")
+set(FLAGS "-mthumb -ffunction-sections -fdata-sections")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
-message("Configured ${PROJECT_NAME} library build for v${PROJECT_VERSION}")
+message("Configured ${PROJECT_NAME} library build version ${PROJECT_VERSION}")

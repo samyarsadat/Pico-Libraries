@@ -3,6 +3,7 @@
 # their specific directory(s).
 
 add_subdirectory(utils_lib)
-add_subdirectory(Local_Helpers_lib)
+add_subdirectory(adc_lock_lib)
+add_subdirectory(uros_utils_lib)
 add_subdirectory(freertos_agent_lib)
 add_subdirectory(MicroROS_FreeRTOS_Helpers_lib)
