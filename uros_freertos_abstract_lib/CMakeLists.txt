@@ -30,7 +30,7 @@ endif ()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set project name and C/C++ standards
-project(uros_freertos_helpers_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
+project(uros_freertos_abstract_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -41,8 +41,8 @@ pico_sdk_init()
 add_subdirectory(src)
 
 # CMake flags
-set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-add_compile_options(-Wall -Wextra -Wpedantic)
+set(FLAGS "-mthumb -ffunction-sections -fdata-sections")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
-message("Configured MicroROS FreeRTOS Helpers Library build. (${PROJECT_NAME} - v${PROJECT_VERSION})")
+message("Configured ${PROJECT_NAME} library build version ${PROJECT_VERSION}")

@@ -25,8 +25,8 @@
 
 
 // ---- Definitions ----
-#define temp_sens_vref         3.26f   // Volts
-#define adc_conversion_factor  (temp_sens_vref / (1 << 12))
+#define ADC_REF_VOLTAGE        3.26f   // Volts
+#define ADC_CONVERSION_FACTOR  (ADC_REF_VOLTAGE / (1 << 12))
 
 
 // Arduino pinMode-like function

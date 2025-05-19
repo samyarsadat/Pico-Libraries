@@ -1,7 +1,8 @@
 /*
-    Pico Libraries (originally from The ROS robot project) - Local Helper/commonly used functions
-    Common diagnostics message definitions
-    
+    Pico Libraries (originally from The ROS robot project)
+    Custom MicroROS allocators for use with FreeRTOS.
+    These override the default MicroROS allocators with the onesprovided by FreeRTOS.
+
     Copyright 2024 Samyar Sadat Akhavi
     Written by Samyar Sadat Akhavi, 2024.
  
@@ -9,7 +10,7 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
- 
+  
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -20,19 +21,17 @@
 */
 
 #pragma once
+#include "pico/stdlib.h"
 
 
-/* ---- STATUS OK ---- */
-// NONE
-
-/* ---- STATUS WARN ---- */
-#define DIAG_WARN_UROS_RCL_FAIL  "micro-ROS RCL failure"
-#define DIAG_WARN_SYS_FAIL       "general system failure"
-
-/* ---- STATUS ERROR ---- */
-#define DIAG_ERR_UROS_RCL_FAIL   "micro-ROS RCL critical failure"
-#define DIAG_ERR_CRIT_SYS_FAIL   "critical system failure"
-#define DIAG_ERR_INIT_FAIL       "initialization failure"
-
-/* ---- STATUS STALE ---- */
-// NONE
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    void* uros_rtos_allocate(size_t size, void* state);
+    void* uros_rtos_reallocate(void* pointer, size_t size, void* state);
+    void* uros_rtos_zero_allocate(size_t number_of_elements, size_t size_of_element, void* state);
+    void uros_rtos_deallocate(void* pointer, void* state);
+#ifdef __cplusplus
+}
+#endif

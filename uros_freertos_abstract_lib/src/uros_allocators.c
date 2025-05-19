@@ -1,10 +1,10 @@
 /*
     Pico Libraries (originally from The ROS robot project)
     Custom MicroROS allocators for use with FreeRTOS.
-    These override the default MicroROS allocators with the onesprovided by FreeRTOS.
+    These override the default MicroROS allocators with the ones provided by FreeRTOS.
 
-    Copyright 2024 Samyar Sadat Akhavi
-    Written by Samyar Sadat Akhavi, 2024.
+    Copyright 2024-2025 Samyar Sadat Akhavi
+    Written by Samyar Sadat Akhavi, 2024-2025.
  
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,41 +20,30 @@
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
 
-
 #include "uros_allocators.h"
 #include "FreeRTOS.h"
 #include <string.h>
 #include <rcutils/allocator.h>
 
 
-
-// Allocator functions
-void *uros_rtos_allocate(size_t size, void *state)
-{
+void* uros_rtos_allocate(size_t size, void* state) {
     return (void *)pvPortMalloc(size);
 }
 
-void uros_rtos_deallocate(void *pointer, void *state)
-{
-    vPortFree(pointer);
-}
-
-void *uros_rtos_reallocate(void *pointer, size_t size, void *state)
-{
-    if (pointer == NULL)
-    {
-        return (void *)pvPortMalloc(size);
-    } 
-    
-    else 
-    {
-        vPortFree(pointer);
-        return (void *)pvPortMalloc(size);
+void* uros_rtos_reallocate(void* pointer, size_t size, void* state) {
+    if (pointer == NULL) {
+        return (void*) pvPortMalloc(size);
     }
+    
+    vPortFree(pointer);
+    return (void*) pvPortMalloc(size);
 }
 
-void *uros_rtos_zero_allocate(size_t number_of_elements, size_t size_of_element, void *state)
-{
-    void *res = (void *)pvPortMalloc(number_of_elements * size_of_element);
-    return memset(res, 0, number_of_elements * size_of_element);   // memset() returns 'res' unmodified.
+void* uros_rtos_zero_allocate(size_t number_of_elements, size_t size_of_element, void* state) {
+    void *res = (void*) pvPortMalloc(number_of_elements * size_of_element);
+    return memset(res, 0, number_of_elements * size_of_element);  // memset() returns 'res' unmodified.
+}
+
+void uros_rtos_deallocate(void* pointer, void* state) {
+    vPortFree(pointer);
 }

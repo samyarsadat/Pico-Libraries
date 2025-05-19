@@ -28,18 +28,19 @@
 // Max agent name length
 #define MAX_NAME_LENGTH  25
 
+
 // Agent class
 class Agent {
     public:
         // Constructor
         // (name is intentionally not a std::string to avoid dynamic memory alloc.)
-        Agent(const char *name, configSTACK_DEPTH_TYPE task_stack_depth);
+        Agent(const char* name, configSTACK_DEPTH_TYPE task_stack_depth);
 
         // Destructor
         virtual ~Agent();
 
         // Start the agent (FreeRTOS task)
-        virtual bool start(UBaseType_t priority, UBaseType_t core_affinity_mask, bool set_core_affinity);
+        virtual bool start(UBaseType_t priority=tskIDLE_PRIORITY, UBaseType_t core_affinity_mask, bool set_core_affinity=false);
 
         // Stop the agent (FreeRTOS task)
         virtual void stop();
@@ -54,13 +55,13 @@ class Agent {
     protected:
         // Static internal function used by FreeRTOS to start
         // the agent task.
-        static void vTask(void *parameters);
+        static void vTask(void* parameters);
 
         // Main task execute function.
         // Code that is to be executed by the task goes here.
         virtual void execute() = 0;  // Declare as pure virtual function.
 
-        TaskHandle_t task_handle = NULL;     // The FreeRTOS task handle.
+        TaskHandle_t task_handle = nullptr;  // The FreeRTOS task handle.
         char agent_name[MAX_NAME_LENGTH];    // The agent (task) name.
         configSTACK_DEPTH_TYPE stack_depth;  // The static stack depth required by the agent.
 };

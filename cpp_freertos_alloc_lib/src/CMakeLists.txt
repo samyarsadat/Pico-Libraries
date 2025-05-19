@@ -1,8 +1,8 @@
-#  Pico Libraries (originally from The ROS robot project) - Library CMake config
-#  Helper functions for using MicroROS with FreeRTOS.  
+#  Pico Libraries - Library CMake config
+#  C++ new and delete allocator overrides for FreeRTOS.
 #
-#  Copyright 2024 Samyar Sadat Akhavi
-#  Written by Samyar Sadat Akhavi, 2024.
+#  Copyright 2025 Samyar Sadat Akhavi
+#  Written by Samyar Sadat Akhavi, 2025.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,21 +18,15 @@
 #  along with this program.  If not, see <https: www.gnu.org/licenses/>.
 
 
-# Set minimum required version of CMake
-cmake_minimum_required(VERSION 3.12)
-
 # Add source files
-add_library(${PROJECT_NAME} utils/pico_uart_transport.c
-                            utils/uros_allocators.c
-                            uROS_Bridge_Agent.c++
-                            uROS_Publishing_Handler.c++)
+add_library(${PROJECT_NAME} overrides.c++)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} pico_stdlib
-                                      micro_ros
-                                      FreeRTOS-Kernel
-                                      local_helpers_lib
-                                      freertos_helpers_lib)
+                                      FreeRTOS-Kernel)
+
+# Enable all warnings
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

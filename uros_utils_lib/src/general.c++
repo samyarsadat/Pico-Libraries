@@ -20,34 +20,37 @@
 */
 
 #include "uros_utils_lib/general.h"
+#include "uros_utils_lib/diag_helper.h"
+#include "uros_common/definitions.h"
 #include "pico_log_lib/logger.h"
 #include <rmw_microros/rmw_microros.h>
 #include "semphr.h"
+#include <stdlib.h>
 
 
-// Note: clean_shutdown() must be defined elsewhere!
-extern void clean_shutdown();
+// Note: these must be implemented/declared elsewhere.
+void system_panic(const char* msg);
 extern Logger logger;
+extern DiagPublisher diag_util;
 
 
-bool check_rc(rcl_ret_t rctc, RT_CHECK_MODE mode, const char *func, uint16_t line) {
+#define ADD_RC_DIAG_KVS()       \
+    DiagKvPairs diag_kvs(3);    \
+    diag_kvs.add("code", rctc); \
+    diag_kvs.add("func", func); \
+    diag_kvs.add("line", line);
+
+bool RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
     if (rctc != RCL_RET_OK) {
-        switch (mode) {
-            case RT_HARD_CHECK:
-                snprintf(buffer, sizeof(buffer), "RCL Return check failed: [code: %d, RT_HARD_CHECK]", rctc);
-                write_log(buffer, LOG_LVL_FATAL, FUNCNAME_LINE_ONLY, func, "", line);
-                publish_diag_report(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_ERR_MSG_UROS_RC_CHECK_FAIL, NULL);
-                clean_shutdown();
-                break;
-            case RT_SOFT_CHECK:
-                snprintf(buffer, sizeof(buffer), "RCL Return check failed: [code: %d, RT_SOFT_CHECK]", rctc);
-                write_log(buffer, LOG_LVL_ERROR, FUNCNAME_LINE_ONLY, func, "", line);
-                publish_diag_report(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_WARN_MSG_UROS_RC_CHECK_FAIL, NULL);
-                break;
-            case RT_LOG_ONLY_CHECK:
-                snprintf(buffer, sizeof(buffer), "RCL Return check failed: [code: %d, RT_LOG_ONLY_CHECK]", rctc);
-                write_log(buffer, LOG_LVL_WARN, FUNCNAME_LINE_ONLY, func, "", line);
-                break;
+        if (mode == RC_SOFT_CHECK) {
+            ADD_RC_DIAG_KVS();
+            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_WARN_UROS_RCL_FAIL, &diag_kvs);
+        } else if (mode == RC_HARD_CHECK) {
+            ADD_RC_DIAG_KVS();
+            diag_util.publish(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_ERR_UROS_RCL_FAIL, &diag_kvs);
+            system_panic(DIAG_ERR_UROS_RCL_FAIL);
+        } else {
+            logger.log(func, file, line, LOG_LVL_ERROR, "RCL failure with code: %d", rctc);
         }
 
         return false;
@@ -56,44 +59,28 @@ bool check_rc(rcl_ret_t rctc, RT_CHECK_MODE mode, const char *func, uint16_t lin
     return true;
 }
 
-bool check_bool(bool function, RT_CHECK_MODE mode, const char *func, uint16_t line) {
-    if (!function) {
-        switch (mode) {
-            case RT_HARD_CHECK:
-                write_log("BOOL Return check failed: [RT_HARD_CHECK]", LOG_LVL_FATAL, FUNCNAME_LINE_ONLY, func, "", line);
-                publish_diag_report(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM, DIAG_ID_SYS_GENERAL, DIAG_ERR_MSG_BOOL_RT_CHECK_FAIL, NULL);
-                clean_shutdown();
-                break;
-            case RT_SOFT_CHECK:
-                write_log("BOOL Return check failed: [RT_SOFT_CHECK]", LOG_LVL_ERROR, FUNCNAME_LINE_ONLY, func, "", line);
-                publish_diag_report(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_GENERAL, DIAG_WARN_MSG_BOOL_RT_CHECK_FAIL, NULL);
-                break;
-            case RT_LOG_ONLY_CHECK:
-                write_log("BOOL Return check failed: [RT_LOG_ONLY_CHECK]", LOG_LVL_WARN, FUNCNAME_LINE_ONLY, func, "", line);
-                break;
-        }
-    }
-
-    return function;
-}
-
-bool check_exec_interval(uint32_t &last_call_time_ms, const uint16_t max_exec_time_ms, const char* log_msg, bool pub_diag,
+bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, bool pub_diag,
                          const char* func, const char* file, const uint16_t line) {
+    uint32_t current_time = time_us_32();
+    
     // Initialize last_call_time_ms if it's 0 (first call).
-    if (last_call_time_ms == 0) { 
-        last_call_time_ms = time_us_32() / 1000; 
+    if (last_call_time == 0) { 
+        last_call_time = current_time; 
     }
 
-    uint32_t time_ms = time_us_32() / 1000;
-    uint32_t exec_time_ms = time_ms - last_call_time_ms;
-    last_call_time_ms = time_ms;
+    uint32_t exec_time_ms = (current_time - last_call_time) / 1000;
+    last_call_time = current_time;
     
     if (exec_time_ms > max_exec_time_ms) {
-        // This is also quite ugly, but it also works.
-        log_msg = log_msg + " [act: " + std::to_string(exec_time_ms) + "ms, lim: " + std::to_string(max_exec_time_ms) + "ms]";
-        write_log(log_msg, LOG_LVL_WARN, FUNCNAME_ONLY, func);
-
-        /* DIAG PUB */
+        if (pub_diag) {
+            DiagKvPairs diag_kvs(3);
+            diag_kvs.add("exec_time_ms", exec_time_ms);
+            diag_kvs.add("limit_ms", max_exec_time_ms);
+            diag_kvs.add("func", func);
+            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_TIMERS, msg, &diag_kvs);
+        } else {
+            logger.log(func, file, line, LOG_LVL_WARN, "%s [actual: %ums, limit: %ums]", msg, exec_time_ms, max_exec_time_ms);
+        }
 
         return false;
     }

@@ -24,6 +24,10 @@
 #include <diagnostic_msgs/msg/diagnostic_status.h>
 
 
+#define KV_CONVERSION_BUFF_SIZE_FLT  50
+#define KV_CONVERSION_BUFF_SIZE_INT  12
+#define KV_FTOA_DIG_AFTER_DEC_POINT  7
+
 // Diagnostics message levels
 enum DIAG_MSG_LEVEL {
     DIAG_LVL_OK    = diagnostic_msgs__msg__DiagnosticStatus__OK,
@@ -41,13 +45,23 @@ class DiagKvPairs {
         DiagKvPairs(const size_t capacity);
         ~DiagKvPairs();
 
-        bool add(char* key, char* value);
+        // For integer (VT & KT), float (VT only), and boolean (VT only) types.
+        template <typename KT, typename VT>
+        bool add(KT key, VT value);
+
+        // Base implementation.
+        bool add(const char* key, const char* value);
+
         size_t size();
         diagnostic_msgs__msg__KeyValue* arr_ptr();
 
     private:
         size_t arr_size = 0, capacity = 0;
         diagnostic_msgs__msg__KeyValue* storage_ptr;
+        
+        size_t to_free_char_ptrs_size = 0;
+        char** to_free_char_ptrs;
+        size_t to_free_char_ptrs_index = 0;
 };
 
 
@@ -59,9 +73,11 @@ class DiagPublisher {
         DiagPublisher(const rcl_publisher_t* diag_pub);
         
         void enable_diag(const bool enable);
-        bool publish(const DIAG_MSG_LEVEL level, char* hw_name, char* hw_id, char* msg, DiagKvPairs* kv_pairs);
+        bool publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log = true);
 
     private:
         const rcl_publisher_t* publisher;
         bool diag_enabled = true;
+
+        void log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_msg);
 };

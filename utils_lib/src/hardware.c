@@ -85,7 +85,7 @@ void gpio_put_pwm(uint pin, uint16_t level) {
 // NOTE: The ADC must be initialized and the temperature sensor must be enabled!
 float get_proc_temp() {
     adc_select_input(ADC_TEMPERATURE_CHANNEL_NUM);
-    const double reading_volts = adc_read() * adc_conversion_factor;
+    const double reading_volts = adc_read() * ADC_CONVERSION_FACTOR;
     const float reading_celsius = 27 - (reading_volts - 0.706) / 0.001721;  // Formula is valid for RP2040 and RP2350.
     return reading_celsius;
 }
@@ -108,6 +108,7 @@ int get_gpio_adc_channel(uint gpio) {
 // Resets the pico using the watchdog timer
 void watchdog_reset() {
     watchdog_disable();
+    watchdog_reboot(0, 0, 0);
     watchdog_enable(1, true);
     while (1);  // Wait for the watchdog to reset the system.
 }

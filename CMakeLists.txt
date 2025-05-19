@@ -4,7 +4,8 @@
 
 add_subdirectory(utils_lib)
 add_subdirectory(adc_lock_lib)
+add_subdirectory(pico_log_lib)
 add_subdirectory(uros_utils_lib)
 add_subdirectory(freertos_agent_lib)
-add_subdirectory(MicroROS_FreeRTOS_Helpers_lib)
-add_subdirectory(pico_log_lib)
+add_subdirectory(cpp_freertos_alloc_lib)
+add_subdirectory(uros_freertos_abstract_lib)

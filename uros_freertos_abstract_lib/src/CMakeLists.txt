@@ -1,4 +1,6 @@
-#  Pico Libraries (originally from The ROS robot project) (Local Helpers Library) - Library CMake config
+#  Pico Libraries (originally from The ROS robot project) - Library CMake config
+#  Helper functions for using MicroROS with FreeRTOS.  
+#
 #  Copyright 2024 Samyar Sadat Akhavi
 #  Written by Samyar Sadat Akhavi, 2024.
 #
@@ -17,16 +19,18 @@
 
 
 # Add source files
-add_library(${PROJECT_NAME} general.c++
-                            diag_helper.c++)
+add_library(${PROJECT_NAME} uros_bridge.c++
+                            uros_allocators.c)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 
 # Link to libraries
-target_link_libraries(${PROJECT_NAME} micro_ros
+target_link_libraries(${PROJECT_NAME} pico_stdlib
+                                      micro_ros
                                       FreeRTOS-Kernel
-                                      pico_log_lib)
+                                      uros_utils_lib
+                                      utils_lib)
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

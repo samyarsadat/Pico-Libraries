@@ -34,25 +34,22 @@
 #define UROS_AGENT_FIND_ATTEMPTS    10
 
 // Return checker modes Enum 
-enum RT_CHECK_MODE {
-    RT_HARD_CHECK, 
-    RT_SOFT_CHECK, 
-    RT_LOG_ONLY_CHECK
+enum RC_CHECK_MODE {
+    RC_HARD_CHECK, 
+    RC_SOFT_CHECK, 
+    RC_LOG_ONLY_CHECK
 };
 
 
 // RCL return checker
-bool check_rc(const rcl_ret_t rctc, const RT_CHECK_MODE mode, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
-
-// Return checker, except for functions that return a boolean
-bool check_bool(const bool function, const RT_CHECK_MODE mode, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
+bool RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode=RC_SOFT_CHECK, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 /*  
     Execution interval checker
     Checks the amount of time passed since the last time it was called (with the specific time storage varialble provided)
     Returns false if the execution time has exceeded the specified limit
 */
-bool check_exec_interval(uint32_t &last_call_time_ms, const uint16_t max_exec_time_ms, const char* log_msg, bool pub_diag=false,
+bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, bool pub_diag=false,
                          const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 // Pings the MicroROS agent
