@@ -46,7 +46,7 @@ bool Agent::start(UBaseType_t priority, UBaseType_t core_affinity_mask, bool set
         return true;
     }
 
-    return false;
+    return res == pdPASS;
 }
 
 // Stop the agent (FreeRTOS task)
@@ -70,6 +70,11 @@ UBaseType_t Agent::get_high_water_mark() {
 // Get the FreeRTOS task that is being used by the agent.
 TaskHandle_t Agent::get_rtos_task() {
     return task_handle;
+}
+
+// Get the agent name.
+const char* Agent::get_agent_name() {
+    return agent_name;
 }
 
 // Static internal function used by FreeRTOS to start

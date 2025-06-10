@@ -33,6 +33,7 @@ extern Logger logger;
 
 /* ---- DiagKvPairs ---- */
 DiagKvPairs::DiagKvPairs(const size_t capacity) {
+    assert(capacity > 0);
     this->capacity = capacity;
     this->to_free_char_ptrs_size = capacity * 2;  // Only a maximum of 2 buffers are allocated per KV pair.
 
@@ -74,7 +75,7 @@ constexpr bool always_false = false;
     this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_value;
 
 template <typename KT, typename VT>
-bool DiagKvPairs::add(KT key, VT value) {
+bool DiagKvPairs::add(KT key, VT value) {    
     char* ret_key, ret_value;
 
     if constexpr (std::is_same<VT, unsigned>) {
@@ -93,6 +94,7 @@ bool DiagKvPairs::add(KT key, VT value) {
     }
 
     if constexpr (std::is_same<KT, const char*>) {
+        assert(key != nullptr);
         ret_key = const_cast<char*>(key); 
     } else if constexpr (std::is_same<KT, unsigned>) {
         KEY_CONV_BUFF();
@@ -108,6 +110,8 @@ bool DiagKvPairs::add(KT key, VT value) {
 }
 
 bool DiagKvPairs::add(const char* key, const char* value) {
+    assert(key != nullptr && value != nullptr);
+
     if (this->arr_size < this->capacity) {
         this->storage_ptr[arr_size] = {
             .key = {const_cast<char*>(key), strlen(key)},
@@ -139,7 +143,9 @@ void DiagPublisher::enable_diag(bool enabled) {
     this->diag_enabled = enabled;
 }
 
-bool DiagPublisher::publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log) {
+rcl_ret_t DiagPublisher::publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log) {
+    assert(name != nullptr && hw_id != nullptr && msg != nullptr);
+    
     if (this->diag_enabled) {
         diagnostic_msgs__msg__DiagnosticStatus diag_msg;
         
@@ -163,13 +169,15 @@ bool DiagPublisher::publish(const DIAG_MSG_LEVEL level, const char* name, const 
             log_diag_msg(&diag_msg);
         }
 
-        return rcl_publish(this->publisher, &diag_msg, nullptr) == RCL_RET_OK;
+        return rcl_publish(this->publisher, &diag_msg, nullptr);
     }
 
-    return true;
+    return RCL_RET_OK;
 }
 
 void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_msg) {
+    assert(diag_msg != nullptr);
+
     size_t kv_buff_size = 1;
     for (size_t i = 0; i < diag_msg->values.size; i++) {
         kv_buff_size += diag_msg->values.data[i].key.size + diag_msg->values.data[i].value.size + 7;

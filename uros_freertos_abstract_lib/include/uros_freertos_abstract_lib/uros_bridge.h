@@ -40,7 +40,9 @@
 #define BRIDGE_AGENT_MEMORY                   2048   // Words
 #define BRIDGE_AGENT_NAME                     "uros_bridge_agent"
 #define AGENT_STATE_MACHINE_EXEC_INTERVAL_MS  200
-#define FINI_WATCHDOG_TIMEOUT_MS              1000
+
+// Misc.
+#define UROS_INIT_RET_CODE_COUNT  4
 
 
 // uROS Bridge Agent class
@@ -53,9 +55,9 @@ class uRosBridgeAgent : public Agent
 
         // MicroROS agent state enum
         enum UROS_STATE {
-            WAITING_FOR_AGENT, 
-            AGENT_AVAILABLE, 
-            AGENT_CONNECTED, 
+            WAITING_FOR_AGENT,
+            AGENT_AVAILABLE,
+            AGENT_CONNECTED,
             AGENT_DISCONNECTED
         };
 
@@ -63,22 +65,21 @@ class uRosBridgeAgent : public Agent
         static uRosBridgeAgent* get_instance();
 
         // Pre-init configuration
-        void configure(uros_init_function init_function, uros_fini_function fini_function);
+        rmw_ret_t configure(uros_init_function init_function, uros_fini_function fini_function);
 
         // Initialize MicroROS node.
         // This function should be called before any other uROS-related functions.
         // This function is NOT thread-safe.
-        void uros_init_node(const char *node_name, const char *name_space, uint8_t node_domain_id);
+        rcl_ret_t uros_init_node(const char *node_name, const char *name_space, uint8_t node_domain_id);
 
         // Add a MicroROS executor to the agent.
         // The bridge agent will manage the executor.
-        // This function should be called after uros_init_node().
         bool uros_add_executor(uRosExecAgent *executor_agent);
 
         // Initialize MicroROS executors.
         // This function should be called after uros_init_node().
         // This function is NOT thread-safe.
-        void uros_init_executors();
+        rcl_ret_t uros_init_executors();
 
         // Finalize MicroROS node, executor, services, subscriptions, 
         // publishers and timers, and stop the agent.
@@ -105,6 +106,9 @@ class uRosBridgeAgent : public Agent
         // Get the MicroROS agent state.
         uRosBridgeAgent::UROS_STATE get_agent_state();
 
+        // This gets called by the executors if they suffer a failure.
+        void notify_executor_failure(uRosExecAgent *executor, rcl_ret_t code, uint8_t retries);
+
     private:
         // Constructor & Destructor
         uRosBridgeAgent();
@@ -126,10 +130,12 @@ class uRosBridgeAgent : public Agent
         rcl_allocator_t rcl_allocator;
         rcl_node_t rc_node;
         rclc_support_t rc_support;
+        rcl_ret_t init_ret_codes[UROS_INIT_RET_CODE_COUNT];
 
         bool node_initialized = false;
         rcl_publisher_t** publishers = nullptr;
         uRosExecAgent** rc_executors = nullptr;
+        bool exec_failed_flag = false;
 
     protected:
         // Execution function

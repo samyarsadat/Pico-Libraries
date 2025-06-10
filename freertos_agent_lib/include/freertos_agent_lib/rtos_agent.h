@@ -52,6 +52,9 @@ class Agent {
         // Get the FreeRTOS task that is being used by the agent.
         TaskHandle_t get_rtos_task();
 
+        // Get the agent name.
+        const char* get_agent_name();
+
     protected:
         // Static internal function used by FreeRTOS to start
         // the agent task.

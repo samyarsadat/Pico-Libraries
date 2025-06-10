@@ -20,7 +20,9 @@
 
 # Add source files
 add_library(${PROJECT_NAME} uros_bridge.c++
-                            uros_allocators.c)
+                            uros_executor.c++
+                            uros_allocators.c
+                            pico_uart_transport.c)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)

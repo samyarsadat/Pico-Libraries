@@ -16,7 +16,7 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https: www.gnu.org/licenses/>.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <cstddef>
@@ -24,6 +24,7 @@
 #include "FreeRTOS.h"
 
 
+// Basic new operators
 void* operator new(size_t size) {
     return pvPortMalloc(size);
 }
@@ -32,46 +33,55 @@ void* operator new[](size_t size) {
     return pvPortMalloc(size);
 }
 
+// Basic delete operators
 void operator delete(void* ptr) noexcept {
-    vPortFree(ptr);
+    if (ptr) {
+        vPortFree(ptr);
+    }
 }
 
 void operator delete[](void* ptr) noexcept {
-    vPortFree(ptr);
+    if (ptr) {
+        vPortFree(ptr);
+    }
 }
 
+// Sized delete operators (C++ 14)
 void operator delete(void* ptr, size_t) noexcept {
-    vPortFree(ptr);
+    if (ptr) {
+        vPortFree(ptr);
+    }
 }
 
 void operator delete[](void* ptr, size_t) noexcept {
-    vPortFree(ptr);
+    if (ptr) {
+        vPortFree(ptr);
+    }
 }
 
-void* operator new(size_t size, const std::nothrow_t&) {
+// Nothrow new operators
+void* operator new(size_t size, const std::nothrow_t&) noexcept {
     return pvPortMalloc(size);
 }
 
-void* operator new[](size_t size, const std::nothrow_t&) {
+void* operator new[](size_t size, const std::nothrow_t&) noexcept {
     return pvPortMalloc(size);
 }
 
+// Aligned new operators (C++ 17)
 void* operator new(size_t size, std::align_val_t alignment) {
-    size_t extra = static_cast<size_t>(alignment) - 1 + sizeof(void*);
+    size_t align = static_cast<size_t>(alignment);
+    size_t extra = align - 1 + sizeof(void*);
     char* raw = static_cast<char*>(pvPortMalloc(size + extra));
     
-    if (!raw) {
-        assert(false);
-        return nullptr;
-    }
+    // Calculate aligned address
+    uintptr_t raw_addr = reinterpret_cast<uintptr_t>(raw);
+    uintptr_t aligned_addr = (raw_addr + sizeof(void*) + align - 1) & ~(align - 1);
+    void* aligned = reinterpret_cast<void*>(aligned_addr);
     
-    void* aligned = reinterpret_cast<void*>(
-        (reinterpret_cast<uintptr_t>(raw) + sizeof(void*) + 
-         static_cast<size_t>(alignment) - 1) & 
-        ~(static_cast<size_t>(alignment) - 1)
-    );
-    
+    // Store original pointer just before the aligned address
     *(reinterpret_cast<void**>(aligned) - 1) = raw;
+    
     return aligned;
 }
 
@@ -79,14 +89,16 @@ void* operator new[](size_t size, std::align_val_t alignment) {
     return operator new(size, alignment);
 }
 
-void* operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) {
+// Nothrow aligned new operators
+void* operator new(size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept {
     return operator new(size, alignment);
 }
 
-void* operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) {
+void* operator new[](size_t size, std::align_val_t alignment, const std::nothrow_t&) noexcept {
     return operator new(size, alignment);
 }
 
+// Aligned delete operators
 void operator delete(void* ptr, std::align_val_t) noexcept {
     if (ptr) {
         void* original = *(reinterpret_cast<void**>(ptr) - 1);
@@ -98,6 +110,7 @@ void operator delete[](void* ptr, std::align_val_t alignment) noexcept {
     operator delete(ptr, alignment);
 }
 
+// Sized aligned delete operators
 void operator delete(void* ptr, size_t, std::align_val_t alignment) noexcept {
     operator delete(ptr, alignment);
 }
@@ -106,10 +119,11 @@ void operator delete[](void* ptr, size_t, std::align_val_t alignment) noexcept {
     operator delete(ptr, alignment);
 }
 
-void* operator new(size_t, void* ptr) {
+// Placement new operators (standard library compatibility)
+void* operator new(size_t, void* ptr) noexcept {
     return ptr;
 }
 
-void* operator new[](size_t, void* ptr) {
+void* operator new[](size_t, void* ptr) noexcept {
     return ptr;
 }

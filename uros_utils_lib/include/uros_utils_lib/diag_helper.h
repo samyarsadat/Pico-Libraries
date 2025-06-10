@@ -73,7 +73,7 @@ class DiagPublisher {
         DiagPublisher(const rcl_publisher_t* diag_pub);
         
         void enable_diag(const bool enable);
-        bool publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log = true);
+        rcl_ret_t publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log = true);
 
     private:
         const rcl_publisher_t* publisher;

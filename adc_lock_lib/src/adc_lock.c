@@ -42,7 +42,7 @@ bool adc_init_mutex() {
 /* ---- Destroy the ADC mutex ---- */
 void adc_destroy_mutex() {
     if (adc_mutex != NULL) {
-        xSemaphoreTake(adc_mutex, portMAX_DELAY);
+        assert(xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE);
         vSemaphoreDelete(adc_mutex);
         adc_mutex = NULL;
     }
@@ -50,21 +50,43 @@ void adc_destroy_mutex() {
 
 /* ---- Take the ADC mutex ---- */
 bool adc_take_mutex() {
-    return (adc_mutex != NULL) && (xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE);
+    if (adc_mutex != NULL) {
+        if (__get_IPSR() == 0) {   // Check if we are in an ISR or not
+            return xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE;
+        }
+
+        return xSemaphoreTakeFromISR(adc_mutex, NULL) == pdTRUE;
+    }
+    
+    return false;
 }
 
 /* ---- Release the ADC mutex ---- */
 void adc_release_mutex() {
-    if (adc_mutex != NULL && xSemaphoreGetMutexHolder(adc_mutex) == xTaskGetCurrentTaskHandle()) {
-        xSemaphoreGive(adc_mutex);
+    if (adc_mutex != NULL) {
+        if (__get_IPSR() == 0) {
+            assert(xSemaphoreGive(adc_mutex) == pdTRUE);
+            return;
+        }
+
+        assert(xSemaphoreGiveFromISR(adc_mutex, NULL) == pdTRUE);
     }
 }
 
 /* ---- Change ADC mux channel with mutex ---- */
 bool adc_select_input_with_mutex(uint8_t channel) {
-    if (adc_mutex != NULL && xSemaphoreGetMutexHolder(adc_mutex) == xTaskGetCurrentTaskHandle()) {
-        adc_select_input(channel);
-        return true;
+    if (adc_mutex != NULL) {
+        if (__get_IPSR() == 0) {
+            if (xSemaphoreGetMutexHolder(adc_mutex) == xTaskGetCurrentTaskHandle()) {
+                adc_select_input(channel);
+                return true;
+            }
+        } else {
+            if (xSemaphoreGetMutexHolderFromISR(adc_mutex) == xTaskGetCurrentTaskHandle()) {
+                adc_select_input(channel);
+                return true;
+            }
+        }
     }
 
     return false;

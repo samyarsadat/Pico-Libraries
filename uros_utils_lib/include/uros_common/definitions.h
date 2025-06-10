@@ -21,4 +21,9 @@
 
 #pragma once
 #include "uros_common/diag_msgs.h"
-#include "uros_common/diag_definitions.h"
+
+// Defualt firmware hardware ID. Override this!
+#define DIAG_FIRMWARE_HARDWARE_ID  "pico-fw-v1.0_2025-01-01_DEFAULT"
+
+// Temporary microROS system name
+#define DIAG_NAME_SYSTEM_UROS  "microros"

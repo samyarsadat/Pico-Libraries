@@ -40,32 +40,32 @@ extern DiagPublisher diag_util;
     diag_kvs.add("func", func); \
     diag_kvs.add("line", line);
 
-bool RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
+rcl_ret_t RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
     if (rctc != RCL_RET_OK) {
         if (mode == RC_SOFT_CHECK) {
             ADD_RC_DIAG_KVS();
-            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_WARN_UROS_RCL_FAIL, &diag_kvs);
+            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM_UROS, DIAG_FIRMWARE_HARDWARE_ID, DIAG_WARN_UROS_RCL_FAIL, &diag_kvs);
         } else if (mode == RC_HARD_CHECK) {
             ADD_RC_DIAG_KVS();
-            diag_util.publish(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, DIAG_ERR_UROS_RCL_FAIL, &diag_kvs);
+            diag_util.publish(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM_UROS, DIAG_FIRMWARE_HARDWARE_ID, DIAG_ERR_UROS_RCL_FAIL, &diag_kvs);
             system_panic(DIAG_ERR_UROS_RCL_FAIL);
         } else {
             logger.log(func, file, line, LOG_LVL_ERROR, "RCL failure with code: %d", rctc);
         }
-
-        return false;
     }
 
-    return true;
+    return rctc;
 }
 
-bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, bool pub_diag,
-                         const char* func, const char* file, const uint16_t line) {
+bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
+                         bool pub_diag, const char* func, const char* file, const uint16_t line) {
+    assert(system != nullptr && msg != nullptr);
     uint32_t current_time = time_us_32();
     
     // Initialize last_call_time_ms if it's 0 (first call).
     if (last_call_time == 0) { 
-        last_call_time = current_time; 
+        last_call_time = current_time;
+        return true;
     }
 
     uint32_t exec_time_ms = (current_time - last_call_time) / 1000;
@@ -73,11 +73,18 @@ bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_
     
     if (exec_time_ms > max_exec_time_ms) {
         if (pub_diag) {
+            const size_t system_len = strlen(system) + 8;
+            char* system_name = static_cast<char*>(pvPortMalloc(system_len));
+            strcpy(system_name, system);
+            strcat(system_name, "/timing");
+
             DiagKvPairs diag_kvs(3);
             diag_kvs.add("exec_time_ms", exec_time_ms);
             diag_kvs.add("limit_ms", max_exec_time_ms);
             diag_kvs.add("func", func);
-            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM, DIAG_ID_SYS_TIMERS, msg, &diag_kvs);
+            diag_util.publish(DIAG_LVL_WARN, system_name, DIAG_FIRMWARE_HARDWARE_ID, msg, &diag_kvs, true);
+
+            vPortFree(system_name);
         } else {
             logger.log(func, file, line, LOG_LVL_WARN, "%s [actual: %ums, limit: %ums]", msg, exec_time_ms, max_exec_time_ms);
         }

@@ -7,49 +7,80 @@
 	<br><br>
 </p>
 
-<br><br>
+<br>
 
 ----
-This repository contains a set of C/C++ helper/utility libraries that I have written for the Raspberry Pi Pico.<br>
-I use these in some of my other projects.<br>
-<br>
+This repository contains a set of C/C++ helper/utility libraries that I have written for the Raspberry Pi Pico.\
+I use these in some of my other projects.\
 
 > [!NOTE]
 > You can add this repository as a submodule to use these libraries.
 
-<br><br>
+<br>
 
 ## Included Libraries
 
-#### Helpers_lib
-This library contains some generic helper functions for the Raspberry Pi Pico (RP2040).<br>
-These can be used in pretty much any RP2040 project.
+> [!NOTE]
+> All of these libraries support both the RP2040 and the RP2350.
 
-#### Local_Helpers_lib
-This library contains more project-specific helper functions. 
-I use these in projects where I'm using FreeRTOS and MicroROS. 
+> [!WARNING]
+> Note that any libraries using FreeRTOS' memory allocation functions (`pvPortMalloc()` and `pvPortCalloc()`) assume that these functions never return `nullptr`/`NULL`, and so they do not check for it.
+>
+> To make sure that these functions never return `NULL` in case of an allocation failure, set `configUSE_MALLOC_FAILED_HOOK` to `1` in your FreeRTOS config, and ensure that your `vApplicationMallocFailedHook` function NEVER returns.
+>
+> A heap allocation failure is considered critical, and soft recovery from it is usually not practical on embedded platforms. Resetting the microcontroller is usually recommended in such cases.
 
-#### FreeRTOS_Helpers_lib
-This library contains generic FreeRTOS helpers/utilities.
-(Currently there's only a task abstraction class, but more will be added as needed.)
+<br>
 
-#### MicroROS_FreeRTOS_Helpers_lib
-This library contians uttilities for using MicroROS alongside FreeRTOS.
-These are necessary as MicroROS does not work well with FreeRTOS SMP on the Pico as of writing this.
-(MicroROS currently does not have official support for FreeRTOS on the Pico)
+### `adc_lock_lib`
+A basic C library providing mutex-based locking for ADC access on the Pico.
+
+### `cpp_freertos_alloc_lib`
+A library for overriding C++'s default `new` and `delete` operators with variants that use memory allocation function provided by FreeRTOS.
+
+### `freertos_agent_lib`
+FreeRTOS task abstraction library. Provides an `Agent` class that can be used to manage a FreeRTOS task.
+
+### `pico_log_lib`
+See `pico_log_lib`'s GitHub repository [here](https://github.com/samyarsadat/Pico-Log-Library).
+
+### `uros_freertos_abstract_lib`
+An abstraction library for integrating microROS with FreeRTOS, partly using the "agent" abstraction provided by `freertos_agent_lib`.\
+This makes configuring microROS and managing its executors easier.
+
+### `uros_utils_lib`
+Provides certain utilities and helpers for microROS. Currently, it includes:
+ - A diagnostics publishing abstraction with a key-value pair abstraction.
+ - RCL return value checking function.
+ - Execution time monitoring and alerting function.
+ - MicroROS agent `ping()` function.
+
+### `utils_lib`
+Generic utility and helper functions for use with the Pico. Cuurently, it includes:
+ - Mathematical utilities.
+   - Value range scaling/mapping function (same as `map()` from Arduino's standard functions).
+   - Floating point number precision truncation function.
+   - Statistical functions (mean, standard deviation, z-score check).
+   - Euler to quaternion conversion function.
+ - Hardware utilities.
+   - Pin initialization helper (similar to `pinMode()` from Arduino).
+   - GPIO PWM output setting helper.
+   - Get processor temperature function.
+   - Get GPIO ADC channel function.
+   - Processor reset function (using watchdog timer).
 
 <br>
 
 ## Contact
-You can contact me via e-mail.<br>
-E-mail: samyarsadat@gigawhat.net<br>
-<br>
-If you think that you have found a bug or issue please report it <a href="../../issues">here</a>.
+You can contact me via e-mail.\
+E-mail: samyarsadat@gigawhat.net\
+
+If you think that you have found a bug or issue please report it [here](../../issues).
 
 <br>
 
 ## Contributing
-Please take a look at <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for contributing.
+Please take a look at [CONTRIBUTING.md](CONTRIBUTING.md) for contributing.
 
 <br>
 
@@ -59,6 +90,5 @@ Please take a look at <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for contribu
 | Lead Developer | <a href="https://github.com/samyarsadat">Samyar Sadat Akhavi</a> |
 
 <br>
-<br>
 
-Copyright © 2024 Samyar Sadat Akhavi.
+Copyright © 2024-2025 Samyar Sadat Akhavi.

@@ -25,11 +25,19 @@
 #include "uros_freertos_abstract_lib/uros_bridge.h"
 #include "uros_freertos_abstract_lib/uros_executor.h"
 #include "uros_freertos_abstract_lib/uros_allocators.h"
+#include "pico_log_lib/logger.h"
 #include "uros_utils_lib/general.h"
 #include "pico_uart_transports.h"
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
 #include "FreeRTOS.h"
+
+
+// Note: these must be implemented/declared elsewhere.
+extern Logger logger;
+
+// Logging macro
+#define LOG(lvl, msg, ...) logger.log(__func__, __FILE__, __LINE__, lvl, msg, ##__VA_ARGS__);
 
 
 // Constructor
@@ -38,10 +46,13 @@ uRosExecAgent::uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf
     this->subscribers = static_cast<rcl_subscription_t**>(pvPortCalloc(MAX_SUBSCRIBERS, sizeof(rcl_subscription_t*)));
     this->services = static_cast<rcl_service_t**>(pvPortCalloc(MAX_SERVICES, sizeof(rcl_service_t*)));
     this->timers = static_cast<rcl_timer_t**>(pvPortCalloc(MAX_TIMERS, sizeof(rcl_timer_t*)));
+    this->rc_executor = rclc_executor_get_zero_initialized_executor();
 }
 
 // Destructor
 uRosExecAgent::~uRosExecAgent() {
+    assert(!this->executor_initialized);
+
     if (subscribers != nullptr) {
         vPortFree(subscribers);
     }
@@ -59,9 +70,10 @@ uRosExecAgent::~uRosExecAgent() {
 // This function should be called after uros_init_node().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::uros_init_executor() {
+    assert(this->bridge_instance != nullptr);
+
     if (!this->executor_initialized) {
         // Initialize the MicroROS executor
-        this->rc_executor = rclc_executor_get_zero_initialized_executor();
         rcl_ret_t ret_code = rclc_executor_init(&this->rc_executor, &this->bridge_instance->get_support()->context, 
                                                 this->executor_handles, this->bridge_instance->get_allocator());
         if (ret_code == RCL_RET_OK) {
@@ -70,36 +82,50 @@ rcl_ret_t uRosExecAgent::uros_init_executor() {
         
         return ret_code;
     }
+
+    return RCL_RET_OK;
+}
+
+// Check if the executor is initialized.
+bool uRosExecAgent::is_initialized() {
+    return this->executor_initialized;
 }
 
 // Finalize MicroROS executor, services, subscriptions, and timers.
 // This function is NOT thread-safe.
+// This must be called before the object is destroyed.
 void uRosExecAgent::uros_fini() {
-    for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
-        if (this->subscribers[i] != nullptr) {
-            (void) rclc_executor_remove_subscription(&this->rc_executor, this->subscribers[i]);
-            (void) rcl_subscription_fini(subscribers[i], this->bridge_instance->get_node());
-            this->subscribers[i] = nullptr;
-        }
-    }
+    if (this->executor_initialized) {
+        cancel_repeating_timer(&this->exec_timer_rt);  // Calling this on a cancelled timer is safe.
+        this->stop();
 
-    for (int i = 0; i < MAX_SERVICES; i++) {
-        if (this->services[i] != nullptr) {
-            (void) rclc_executor_remove_service(&this->rc_executor, this->services[i]);
-            (void) rcl_service_fini(services[i], this->bridge_instance->get_node());
-            this->services[i] = nullptr;
+        for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
+            if (this->subscribers[i] != nullptr) {
+                (void) rclc_executor_remove_subscription(&this->rc_executor, this->subscribers[i]);
+                (void) rcl_subscription_fini(subscribers[i], this->bridge_instance->get_node());
+                this->subscribers[i] = nullptr;
+            }
         }
-    }
 
-    for (int i = 0; i < MAX_TIMERS; i++) {
-        if (this->timers[i] != nullptr) {
-            (void) rclc_executor_remove_timer(&this->rc_executor, this->timers[i]);
-            (void) rcl_timer_fini(timers[i]);
-            this->timers[i] = nullptr;
+        for (int i = 0; i < MAX_SERVICES; i++) {
+            if (this->services[i] != nullptr) {
+                (void) rclc_executor_remove_service(&this->rc_executor, this->services[i]);
+                (void) rcl_service_fini(services[i], this->bridge_instance->get_node());
+                this->services[i] = nullptr;
+            }
         }
-    }
 
-    (void) rclc_executor_fini(&rc_executor);
+        for (int i = 0; i < MAX_TIMERS; i++) {
+            if (this->timers[i] != nullptr) {
+                (void) rclc_executor_remove_timer(&this->rc_executor, this->timers[i]);
+                (void) rcl_timer_fini(timers[i]);
+                this->timers[i] = nullptr;
+            }
+        }
+
+        (void) rclc_executor_fini(&rc_executor);
+        this->executor_initialized = false;
+    }
 }
 
 // Initialize a subscriber.
@@ -107,6 +133,11 @@ void uRosExecAgent::uros_fini() {
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const rosidl_message_type_support_t *type_support, const char *topic_name, UROS_QOS_MODE qos_mode) {
     rcl_ret_t ret_code = -1;
+    
+    if (!this->executor_initialized) {
+        LOG(LOG_LVL_ERROR, "Cannot initialize a subscriber! Executor not initialized!");
+        return ret_code;
+    }
     
     for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
         if (this->subscribers[i] == nullptr) {
@@ -122,6 +153,8 @@ rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const r
                 this->subscribers[i] = subscriber;
                 this->executor_handles ++;
             }
+
+            break;
         }
     }
 
@@ -133,6 +166,11 @@ rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const r
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_service_type_support_t *type_support, const char *service_name, UROS_QOS_MODE qos_mode) {
     rcl_ret_t ret_code = -1;
+
+    if (!this->executor_initialized) {
+        LOG(LOG_LVL_ERROR, "Cannot initialize a service! Executor not initialized!");
+        return ret_code;
+    }
     
     for (int i = 0; i < MAX_SERVICES; i++) {
         if (this->services[i] == nullptr) {
@@ -148,6 +186,8 @@ rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_servi
                 this->services[i] = service;
                 this->executor_handles ++;
             }
+
+            break;
         }
     }
 
@@ -160,6 +200,11 @@ rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_servi
 rcl_ret_t uRosExecAgent::init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback, bool autostart) {
     rcl_ret_t ret_code = -1;
 
+    if (!this->executor_initialized) {
+        LOG(LOG_LVL_ERROR, "Cannot initialize a timer! Executor not initialized!");
+        return ret_code;
+    }
+
     for (int i = 0; i < MAX_TIMERS; i++) {
         if (this->timers[i] == nullptr) {
             *timer = rcl_get_zero_initialized_timer();
@@ -169,15 +214,15 @@ rcl_ret_t uRosExecAgent::init_timer(rcl_timer_t *timer, uint64_t period, rcl_tim
                 this->timers[i] = timer;
                 this->executor_handles ++;
             }
+
+            break;
         }
     }
 
     return ret_code;
 }
 
-
 // Add a subscriber to the executor.
-// Call this after uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::add_subscriber(rcl_subscription_t *subscriber, void *msg, rclc_subscription_callback_t callback, rclc_executor_handle_invocation_t invocation) {
     rcl_ret_t ret_code = -1;
@@ -192,9 +237,7 @@ rcl_ret_t uRosExecAgent::add_subscriber(rcl_subscription_t *subscriber, void *ms
     return ret_code;
 }
 
-
 // Add a service to the executor.
-// Call this after uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::add_service(rcl_service_t *service, void *request, void *response, rclc_service_callback_t callback) {
     rcl_ret_t ret_code = -1;
@@ -209,9 +252,7 @@ rcl_ret_t uRosExecAgent::add_service(rcl_service_t *service, void *request, void
     return ret_code;
 }
 
-
 // Add a timer to the executor.
-// Call this after uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::add_timer(rcl_timer_t *timer) {
     rcl_ret_t ret_code = -1;
@@ -239,60 +280,53 @@ rclc_executor_t* uRosExecAgent::get_executor() {
     return &this->rc_executor;
 }
 
+// Set a pointer to the managing uROS bridge agent.
+// This function is called ONCE by the bridge agent ONLY.
+void uRosExecAgent::set_bridge_agent(uRosBridgeAgent* bridge_agent) {
+    assert(bridge_agent != nullptr);
+    assert(this->bridge_instance == nullptr);
+    this->bridge_instance = bridge_agent;
+}
+
 // Main execution function.
 void uRosExecAgent::execute() {
-    write_log("Starting MicroROS executor notification timer...", LOG_LVL_INFO, FUNCNAME_ONLY);
-    add_repeating_timer_ms(exec_interval_ms, uRosExecAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+    assert(this->executor_initialized);
 
+    LOG(LOG_LVL_INFO, "Starting micro-ROS executor notification timer (%s)...", this->agent_name);
+    add_repeating_timer_ms(this->timing_conf->exec_interval_ms, uRosExecAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+    
     uint32_t last_exec_time = 0;
-    current_uros_state = WAITING_FOR_AGENT;
-    write_log("Waiting for agent...", LOG_LVL_INFO, FUNCNAME_ONLY);
+    uint8_t exec_fail_retry = 0;
 
     while (true) {
         xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);   // Wait for notification indefinitely
 
-        switch (current_uros_state) {
-            case WAITING_FOR_AGENT:
-                current_uros_state = ping_agent() ? AGENT_AVAILABLE:WAITING_FOR_AGENT;
-                break;
-            case AGENT_AVAILABLE:
-                write_log("Agent available!", LOG_LVL_INFO, FUNCNAME_ONLY);
-                check_bool(init_func(), RT_HARD_CHECK);
-                current_uros_state = AGENT_CONNECTED;
-                break;
-            case AGENT_CONNECTED:
-                current_uros_state = ping_agent() ? AGENT_CONNECTED:AGENT_DISCONNECTED;
-                
-                if (current_uros_state == AGENT_CONNECTED) {
-                    check_exec_interval(last_exec_time, exec_interval_limit_ms, "Executor execution time exceeded limits!", true);
-                    bool exec_failed = check_rc(rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(exectr_timeout_ms)), RT_LOG_ONLY_CHECK);
+        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, "Executor execution time exceeded limits!", true);
+        rcl_ret_t ret_code = rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(this->timing_conf->exectr_timeout_ms));
 
-                    if (post_exec_func != NULL && !exec_failed) {
-                        post_exec_func();
-                    }
-                }
-
-                break;
-            case AGENT_DISCONNECTED:
-                write_log("Agent disconnected!", LOG_LVL_INFO, FUNCNAME_ONLY);
+        if (ret_code != RCL_RET_OK) {
+            if (exec_fail_retry == MAX_EXECTR_FAIL_RETRY) {
+                LOG(LOG_LVL_FATAL, "Maximum executor spin failure retries reached! Stopping executor %s!", this->agent_name);
                 cancel_repeating_timer(&exec_timer_rt);
-                fini_func();
-                break;
+                this->bridge_instance->notify_executor_failure(this, ret_code, exec_fail_retry);
+                this->stop();
+            }
+
+            LOG(LOG_LVL_ERROR, "Failed to spin executor %s! Error: %d, retry: %d", this->agent_name, ret_code, exec_fail_retry);
+            exec_fail_retry++;
         }
+
+        taskYIELD();
     }
 }
 
-
 // PRIVATE: Executor notification timer callback.
 bool uRosExecAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
-    uRosExecAgent *bridge_agent = (uRosExecAgent *) rt->user_data;
+    uRosExecAgent* exec_agent = (uRosExecAgent*) rt->user_data;
+    assert(exec_agent != nullptr);
 
-    if (bridge_agent != NULL) {
-        BaseType_t higher_prio_woken;
-        vTaskNotifyGiveFromISR(uRosExecAgent::get_instance()->get_rtos_task(), &higher_prio_woken);
-        portYIELD_FROM_ISR(higher_prio_woken);
-        return true;
-    }
-
-    return false;
+    BaseType_t higher_prio_woken;
+    vTaskNotifyGiveFromISR(exec_agent->get_rtos_task(), &higher_prio_woken);
+    portYIELD_FROM_ISR(higher_prio_woken);
+    return true;
 }

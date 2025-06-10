@@ -26,12 +26,14 @@
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <vector>
+#include "semphr.h"
 
 
 // Absolute maximums
-#define MAX_SUBSCRIBERS  2
-#define MAX_SERVICES     7
-#define MAX_TIMERS       10
+#define MAX_SUBSCRIBERS        2
+#define MAX_SERVICES           7
+#define MAX_TIMERS             10
+#define MAX_EXECTR_FAIL_RETRY  4
 
 // Misc.
 #define EXECTR_AGENT_MEMORY  2048
@@ -51,6 +53,10 @@ class uRosExecAgent : public Agent
         // Constructor & Destructor
         uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf);
         virtual ~uRosExecAgent();
+
+        // Agent stop function
+        // This function is called by the bridge agent ONLY.
+        void stop() override;
 
         // Initialize MicroROS executor.
         // This function should be called after uros_init_node().
@@ -97,7 +103,7 @@ class uRosExecAgent : public Agent
         rclc_executor_t* get_executor();
 
         // Set a pointer to the managing uROS bridge agent.
-        // This function is called by the bridge agent ONLY.
+        // This function is called ONCE by the bridge agent ONLY.
         void set_bridge_agent(uRosBridgeAgent* bridge_agent);
 
     private:
@@ -105,7 +111,7 @@ class uRosExecAgent : public Agent
         struct repeating_timer exec_timer_rt;
         static bool exec_notify_timer_callback(struct repeating_timer *rt);
 
-        uRosBridgeAgent* bridge_instance;
+        uRosBridgeAgent* bridge_instance = nullptr;
         rclc_executor_t rc_executor;
         exectr_timing_conf_t* timing_conf;
 

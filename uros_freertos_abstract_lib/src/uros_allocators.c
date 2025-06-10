@@ -20,14 +20,14 @@
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
 
-#include "uros_allocators.h"
+#include "uros_freertos_abstract_lib/internal/uros_allocators.h"
 #include "FreeRTOS.h"
 #include <string.h>
 #include <rcutils/allocator.h>
 
 
 void* uros_rtos_allocate(size_t size, void* state) {
-    return (void *)pvPortMalloc(size);
+    return (void*) pvPortMalloc(size);
 }
 
 void* uros_rtos_reallocate(void* pointer, size_t size, void* state) {
