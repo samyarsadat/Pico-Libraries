@@ -11,7 +11,7 @@
 
 ----
 This repository contains a set of C/C++ helper/utility libraries that I have written for the Raspberry Pi Pico.\
-I use these in some of my other projects.\
+I use these in some of my other projects.
 
 > [!NOTE]
 > You can add this repository as a submodule to use these libraries.
@@ -24,9 +24,9 @@ I use these in some of my other projects.\
 > All of these libraries support both the RP2040 and the RP2350.
 
 > [!WARNING]
-> Note that any libraries using FreeRTOS' memory allocation functions (`pvPortMalloc()` and `pvPortCalloc()`) assume that these functions never return `nullptr`/`NULL`, and so they do not check for it.
+> Note that any libraries using FreeRTOS' memory allocation functions (`pvPortMalloc()` and `pvPortCalloc()`) assume that these functions never return null, and so they do not check for it.
 >
-> To make sure that these functions never return `NULL` in case of an allocation failure, set `configUSE_MALLOC_FAILED_HOOK` to `1` in your FreeRTOS config, and ensure that your `vApplicationMallocFailedHook` function NEVER returns.
+> To make sure that these functions never return null in case of an allocation failure, set `configUSE_MALLOC_FAILED_HOOK` to `1` in your FreeRTOS config, and ensure that your `vApplicationMallocFailedHook` function NEVER returns.
 >
 > A heap allocation failure is considered critical, and soft recovery from it is usually not practical on embedded platforms. Resetting the microcontroller is usually recommended in such cases.
 
@@ -35,18 +35,27 @@ I use these in some of my other projects.\
 ### `adc_lock_lib`
 A basic C library providing mutex-based locking for ADC access on the Pico.
 
+<br>
+
 ### `cpp_freertos_alloc_lib`
 A library for overriding C++'s default `new` and `delete` operators with variants that use memory allocation function provided by FreeRTOS.
+
+<br>
 
 ### `freertos_agent_lib`
 FreeRTOS task abstraction library. Provides an `Agent` class that can be used to manage a FreeRTOS task.
 
+<br>
+
 ### `pico_log_lib`
 See `pico_log_lib`'s GitHub repository [here](https://github.com/samyarsadat/Pico-Log-Library).
 
+<br>
+
 ### `uros_freertos_abstract_lib`
-An abstraction library for integrating microROS with FreeRTOS, partly using the "agent" abstraction provided by `freertos_agent_lib`.\
-This makes configuring microROS and managing its executors easier.
+An abstraction library for integrating microROS with FreeRTOS. It makes configuring microROS and managing its executors easier.
+
+<br>
 
 ### `uros_utils_lib`
 Provides certain utilities and helpers for microROS. Currently, it includes:
@@ -54,6 +63,8 @@ Provides certain utilities and helpers for microROS. Currently, it includes:
  - RCL return value checking function.
  - Execution time monitoring and alerting function.
  - MicroROS agent `ping()` function.
+
+<br>
 
 ### `utils_lib`
 Generic utility and helper functions for use with the Pico. Cuurently, it includes:
@@ -68,6 +79,8 @@ Generic utility and helper functions for use with the Pico. Cuurently, it includ
    - Get processor temperature function.
    - Get GPIO ADC channel function.
    - Processor reset function (using watchdog timer).
+ - Miscellaneous utilities.
+   - Function for getting a `std::string` representation of a Boolean array.
 
 <br>
 
