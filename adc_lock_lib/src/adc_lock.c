@@ -72,22 +72,3 @@ void adc_release_mutex() {
         assert(xSemaphoreGiveFromISR(adc_mutex, NULL) == pdTRUE);
     }
 }
-
-/* ---- Change ADC mux channel with mutex ---- */
-bool adc_select_input_with_mutex(uint8_t channel) {
-    if (adc_mutex != NULL) {
-        if (__get_IPSR() == 0) {
-            if (xSemaphoreGetMutexHolder(adc_mutex) == xTaskGetCurrentTaskHandle()) {
-                adc_select_input(channel);
-                return true;
-            }
-        } else {
-            if (xSemaphoreGetMutexHolderFromISR(adc_mutex) == xTaskGetCurrentTaskHandle()) {
-                adc_select_input(channel);
-                return true;
-            }
-        }
-    }
-
-    return false;
-}

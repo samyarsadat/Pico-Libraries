@@ -40,7 +40,7 @@ extern DiagPublisher diag_util;
     diag_kvs.add("func", func); \
     diag_kvs.add("line", line);
 
-rcl_ret_t RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
+rcl_ret_t rc_check(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
     if (rctc != RCL_RET_OK) {
         if (mode == RC_SOFT_CHECK) {
             ADD_RC_DIAG_KVS();
@@ -60,7 +60,7 @@ rcl_ret_t RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, co
 bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
                          bool pub_diag, const char* func, const char* file, const uint16_t line) {
     assert(system != nullptr && msg != nullptr);
-    uint32_t current_time = time_us_32();
+    const uint32_t current_time = time_us_32();
     
     // Initialize last_call_time_ms if it's 0 (first call).
     if (last_call_time == 0) { 
@@ -82,7 +82,7 @@ bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_
             diag_kvs.add("exec_time_ms", exec_time_ms);
             diag_kvs.add("limit_ms", max_exec_time_ms);
             diag_kvs.add("func", func);
-            diag_util.publish(DIAG_LVL_WARN, system_name, DIAG_FIRMWARE_HARDWARE_ID, msg, &diag_kvs, true);
+            (void) diag_util.publish(DIAG_LVL_WARN, system_name, DIAG_FIRMWARE_HARDWARE_ID, msg, &diag_kvs, true);
 
             vPortFree(system_name);
         } else {

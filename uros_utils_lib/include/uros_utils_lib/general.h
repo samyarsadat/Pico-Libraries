@@ -42,7 +42,7 @@ enum RC_CHECK_MODE {
 
 
 // RCL return checker
-rcl_ret_t RCCHECK(const rcl_ret_t rctc, const RC_CHECK_MODE mode=RC_SOFT_CHECK, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
+rcl_ret_t rc_check(const rcl_ret_t rctc, const RC_CHECK_MODE mode=RC_SOFT_CHECK, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
 
 /*  
     Execution interval checker

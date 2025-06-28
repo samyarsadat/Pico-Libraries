@@ -34,6 +34,3 @@ bool adc_take_mutex();
 
 /* ---- Release the ADC mutex ---- */
 void adc_release_mutex();
-
-/* ---- Change ADC mux channel with mutex ---- */
-bool adc_select_input_with_mutex(uint8_t channel);
