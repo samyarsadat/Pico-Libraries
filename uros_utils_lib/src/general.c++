@@ -29,7 +29,6 @@
 
 
 // Note: these must be implemented/declared elsewhere.
-void system_panic(const char* msg);
 extern Logger logger;
 extern DiagPublisher diag_util;
 
@@ -40,18 +39,9 @@ extern DiagPublisher diag_util;
     diag_kvs.add("func", func); \
     diag_kvs.add("line", line);
 
-rcl_ret_t rc_check(const rcl_ret_t rctc, const RC_CHECK_MODE mode, char* func, const char* file, const uint16_t line) {
+rcl_ret_t rc_log(const rcl_ret_t rctc, char* func, const char* file, const uint16_t line) {
     if (rctc != RCL_RET_OK) {
-        if (mode == RC_SOFT_CHECK) {
-            ADD_RC_DIAG_KVS();
-            diag_util.publish(DIAG_LVL_WARN, DIAG_NAME_SYSTEM_UROS, DIAG_FIRMWARE_HARDWARE_ID, DIAG_WARN_UROS_RCL_FAIL, &diag_kvs);
-        } else if (mode == RC_HARD_CHECK) {
-            ADD_RC_DIAG_KVS();
-            diag_util.publish(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM_UROS, DIAG_FIRMWARE_HARDWARE_ID, DIAG_ERR_UROS_RCL_FAIL, &diag_kvs);
-            system_panic(DIAG_ERR_UROS_RCL_FAIL);
-        } else {
-            logger.log(func, file, line, LOG_LVL_ERROR, "RCL failure with code: %d", rctc);
-        }
+        logger.log(func, file, line, LOG_LVL_ERROR, "RCL failure with code: %d", rctc);
     }
 
     return rctc;

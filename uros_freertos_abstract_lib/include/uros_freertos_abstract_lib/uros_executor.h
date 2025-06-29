@@ -79,10 +79,6 @@ class uRosExecAgent : public Agent
         // This function is NOT thread-safe.
         rcl_ret_t init_service(rcl_service_t *service, const rosidl_service_type_support_t *type_support, const char *service_name, UROS_QOS_MODE qos_mode=QOS_RELIABLE);
 
-        // Initialize a timer.
-        // This function is NOT thread-safe.
-        rcl_ret_t init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback, bool autostart=false);
-
         // Add a subscriber to the executor.
         // This function is NOT thread-safe.
         rcl_ret_t add_subscriber(rcl_subscription_t *subscriber, void *msg, rclc_subscription_callback_t callback, rclc_executor_handle_invocation_t invocation=ON_NEW_DATA);
@@ -90,10 +86,6 @@ class uRosExecAgent : public Agent
         // Add a service to the executor.
         // This function is NOT thread-safe.
         rcl_ret_t add_service(rcl_service_t *service, void *request, void *response, rclc_service_callback_t callback);
-
-        // Add a timer to the executor.
-        // This function is NOT thread-safe.
-        rcl_ret_t add_timer(rcl_timer_t *timer);
 
         // Add n amount of handles to the executor.
         // This function is only effective before the executor is started.
@@ -121,7 +113,6 @@ class uRosExecAgent : public Agent
         int executor_handles = 0;
         rcl_subscription_t** subscribers;
         rcl_service_t** services;
-        rcl_timer_t** timers;
 
     protected:
         // Execution function

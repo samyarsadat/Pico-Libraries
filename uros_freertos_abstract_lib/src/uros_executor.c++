@@ -45,7 +45,6 @@ uRosExecAgent::uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf
     this->timing_conf = timing_conf;
     this->subscribers = static_cast<rcl_subscription_t**>(pvPortCalloc(MAX_SUBSCRIBERS, sizeof(rcl_subscription_t*)));
     this->services = static_cast<rcl_service_t**>(pvPortCalloc(MAX_SERVICES, sizeof(rcl_service_t*)));
-    this->timers = static_cast<rcl_timer_t**>(pvPortCalloc(MAX_TIMERS, sizeof(rcl_timer_t*)));
     this->rc_executor = rclc_executor_get_zero_initialized_executor();
 }
 
@@ -59,10 +58,6 @@ uRosExecAgent::~uRosExecAgent() {
 
     if (services != nullptr) {
         vPortFree(services);
-    }
-
-    if (timers != nullptr) {
-        vPortFree(timers);
     }
 }
 
@@ -91,7 +86,7 @@ bool uRosExecAgent::is_initialized() {
     return this->executor_initialized;
 }
 
-// Finalize MicroROS executor, services, subscriptions, and timers.
+// Finalize MicroROS executor, services, and subscriptions.
 // This function is NOT thread-safe.
 // This must be called before the object is destroyed.
 void uRosExecAgent::uros_fini() {
@@ -115,16 +110,9 @@ void uRosExecAgent::uros_fini() {
             }
         }
 
-        for (int i = 0; i < MAX_TIMERS; i++) {
-            if (this->timers[i] != nullptr) {
-                (void) rclc_executor_remove_timer(&this->rc_executor, this->timers[i]);
-                (void) rcl_timer_fini(timers[i]);
-                this->timers[i] = nullptr;
-            }
-        }
-
         (void) rclc_executor_fini(&rc_executor);
         this->executor_initialized = false;
+        LOG(LOG_LVL_INFO, "Micro-ROS executor %s finalized.", this->agent_name);
     }
 }
 
@@ -133,12 +121,7 @@ void uRosExecAgent::uros_fini() {
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const rosidl_message_type_support_t *type_support, const char *topic_name, UROS_QOS_MODE qos_mode) {
     rcl_ret_t ret_code = -1;
-    
-    if (!this->executor_initialized) {
-        LOG(LOG_LVL_ERROR, "Cannot initialize a subscriber! Executor not initialized!");
-        return ret_code;
-    }
-    
+
     for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
         if (this->subscribers[i] == nullptr) {
             *subscriber = rcl_get_zero_initialized_subscription();
@@ -166,11 +149,6 @@ rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const r
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_service_type_support_t *type_support, const char *service_name, UROS_QOS_MODE qos_mode) {
     rcl_ret_t ret_code = -1;
-
-    if (!this->executor_initialized) {
-        LOG(LOG_LVL_ERROR, "Cannot initialize a service! Executor not initialized!");
-        return ret_code;
-    }
     
     for (int i = 0; i < MAX_SERVICES; i++) {
         if (this->services[i] == nullptr) {
@@ -194,37 +172,10 @@ rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_servi
     return ret_code;
 }
 
-// Initialize a timer.
-// Call this before uros_init_executor().
-// This function is NOT thread-safe.
-rcl_ret_t uRosExecAgent::init_timer(rcl_timer_t *timer, uint64_t period, rcl_timer_callback_t callback, bool autostart) {
-    rcl_ret_t ret_code = -1;
-
-    if (!this->executor_initialized) {
-        LOG(LOG_LVL_ERROR, "Cannot initialize a timer! Executor not initialized!");
-        return ret_code;
-    }
-
-    for (int i = 0; i < MAX_TIMERS; i++) {
-        if (this->timers[i] == nullptr) {
-            *timer = rcl_get_zero_initialized_timer();
-            ret_code = rclc_timer_init_default2(timer, this->bridge_instance->get_support(), RCL_MS_TO_NS(period), callback, autostart);
-            
-            if (ret_code == RCL_RET_OK) {
-                this->timers[i] = timer;
-                this->executor_handles ++;
-            }
-
-            break;
-        }
-    }
-
-    return ret_code;
-}
-
 // Add a subscriber to the executor.
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::add_subscriber(rcl_subscription_t *subscriber, void *msg, rclc_subscription_callback_t callback, rclc_executor_handle_invocation_t invocation) {
+    assert(this->executor_initialized);
     rcl_ret_t ret_code = -1;
 
     for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
@@ -240,6 +191,7 @@ rcl_ret_t uRosExecAgent::add_subscriber(rcl_subscription_t *subscriber, void *ms
 // Add a service to the executor.
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::add_service(rcl_service_t *service, void *request, void *response, rclc_service_callback_t callback) {
+    assert(this->executor_initialized);
     rcl_ret_t ret_code = -1;
 
     for (int i = 0; i < MAX_SERVICES; i++) {
@@ -252,27 +204,15 @@ rcl_ret_t uRosExecAgent::add_service(rcl_service_t *service, void *request, void
     return ret_code;
 }
 
-// Add a timer to the executor.
-// This function is NOT thread-safe.
-rcl_ret_t uRosExecAgent::add_timer(rcl_timer_t *timer) {
-    rcl_ret_t ret_code = -1;
-    
-    for (int i = 0; i < MAX_TIMERS; i++) {
-        if (this->timers[i] == timer) {
-            ret_code = rclc_executor_add_timer(&this->rc_executor, timer);
-            break;
-        }
-    }
-
-    return ret_code;
-}
-
 // Add n amount of handles to the executor.
 // This function is only effective before the executor is started.
 void uRosExecAgent::add_executor_handles(int num_handles) {
     if (!this->executor_initialized) {
         this->executor_handles += num_handles;
+        return;
     }
+
+    assert(false);
 }
 
 // Get the MicroROS executor.
@@ -301,8 +241,8 @@ void uRosExecAgent::execute() {
     while (true) {
         xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);   // Wait for notification indefinitely
 
-        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, "Executor execution time exceeded limits!", true);
         rcl_ret_t ret_code = rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(this->timing_conf->exectr_timeout_ms));
+        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, "", "Executor execution time exceeded limits!", true);
 
         if (ret_code != RCL_RET_OK) {
             if (exec_fail_retry == MAX_EXECTR_FAIL_RETRY) {

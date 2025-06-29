@@ -27,6 +27,7 @@
 #include "uros_freertos_abstract_lib/internal/pico_uart_transport.h"
 #include "uros_utils_lib/general.h"
 #include "uros_utils_lib/diag_helper.h"
+#include "uros_common/definitions.h"
 #include "uros_common/diag_definitions.h"
 #include "utils_lib/hardware.h"
 #include "pico_log_lib/logger.h"
@@ -80,7 +81,7 @@ uRosBridgeAgent *uRosBridgeAgent::get_instance() {
 }
 
 // Pre-init configuration
-rmw_ret_t uRosBridgeAgent::configure(uros_init_function init_function, uros_fini_function fini_function) {
+void uRosBridgeAgent::configure(uros_init_function init_function, uros_fini_function fini_function) {
     this->init_func = init_function;
     this->fini_func = fini_function;
 
@@ -91,41 +92,34 @@ rmw_ret_t uRosBridgeAgent::configure(uros_init_function init_function, uros_fini
     rtos_allocators.reallocate = uros_rtos_reallocate;
     rtos_allocators.zero_allocate = uros_rtos_zero_allocate;
     
-    if (!rcutils_set_default_allocator(&rtos_allocators)) {
-        LOG(LOG_LVL_ERROR, "Failed to set default allocator for micro-ROS!");
-        return -1;
-    }
+    // rcutils_set_default_allocator only checks for allocator validity.
+    assert(rcutils_set_default_allocator(&rtos_allocators));
 
     // Set MicroROS transport
-    rmw_ret_t ret_code = rmw_uros_set_custom_transport(
+    // rmw_uros_set_custom_transport only checks for nullptr arguments.
+    assert(rmw_uros_set_custom_transport(
         true,
         nullptr,
         pico_serial_transport_open,
         pico_serial_transport_close,
         pico_serial_transport_write,
         pico_serial_transport_read
-    );
-
-    if (ret_code != RMW_RET_OK) {
-        LOG(LOG_LVL_ERROR, "Failed to set custom transport for micro-ROS!");
-    }
-
-    return ret_code;
+    ) == RMW_RET_OK);
 }
 
 // Initialize the MicroROS node.
 // This function should be called before any other uROS-related functions.
 // This function is NOT thread-safe.
 rcl_ret_t uRosBridgeAgent::uros_init_node(const char *node_name, const char *name_space, uint8_t node_domain_id) {
-    if (!this->init_ret_codes[3] == RCL_RET_OK) {
+    if (this->init_ret_codes[2] != RCL_RET_OK) {
         // Initialize the MicroROS allocator
         this->rcl_allocator = rcl_get_default_allocator();
 
         // Initialize the MicroROS node
         this->init_ret_codes[0] = rcl_init_options_init(&this->rcl_init_opts, this->rcl_allocator);
-        this->init_ret_codes[1] = rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id);
-        this->init_ret_codes[2] = rclc_support_init_with_options(&this->rc_support, 0, nullptr, &this->rcl_init_opts, &this->rcl_allocator);
-        this->init_ret_codes[3] = rclc_node_init_default(&this->rc_node, node_name, name_space, &this->rc_support);
+        assert(rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id) == RCL_RET_OK);
+        this->init_ret_codes[1] = rclc_support_init_with_options(&this->rc_support, 0, nullptr, &this->rcl_init_opts, &this->rcl_allocator);
+        this->init_ret_codes[2] = rclc_node_init_default(&this->rc_node, node_name, name_space, &this->rc_support);
 
         for (int i = 0; i < UROS_INIT_RET_CODE_COUNT; i++) {
             if (this->init_ret_codes[i] != RCL_RET_OK) {
@@ -157,11 +151,7 @@ bool uRosBridgeAgent::uros_add_executor(uRosExecAgent *executor_agent) {
 // This function should be called after uros_init_node().
 // This function is NOT thread-safe.
 rcl_ret_t uRosBridgeAgent::uros_init_executors() {
-    if (!this->init_ret_codes[3] == RCL_RET_OK) {
-        LOG(LOG_LVL_ERROR, "Micro-ROS node not initialized! Cannot initialize executors.");
-        return -1;
-    }
-    
+    assert(this->init_ret_codes[2] == RCL_RET_OK);
     rcl_ret_t ret_code;
 
     for (int i = 0; i < MAX_EXECUTORS; i++) {
@@ -179,12 +169,17 @@ rcl_ret_t uRosBridgeAgent::uros_init_executors() {
     return RCL_RET_OK;
 }
 
+// Set the agent disconnect flag to true.
+void uRosBridgeAgent::disconnect_agent() {
+    LOG(LOG_LVL_INFO, "Disconnecting micro-ROS agent...");
+    this->disco_agent_flag = true;
+}
+
 // Finalize MicroROS node, executor, services, subscriptions,
 // publishers and timers, and stop the agent.
 // This function is NOT thread-safe.
+// Only call it from the bridge fini function.
 void uRosBridgeAgent::uros_fini() {
-    this->exec_failed_flag = true;
-    
     for (int i = 0; i < MAX_PUBLISHERS; i++) {
         if (this->publishers[i] != nullptr) {
             (void) rcl_publisher_fini(this->publishers[i], &this->rc_node);
@@ -199,15 +194,15 @@ void uRosBridgeAgent::uros_fini() {
         }
     }
 
-    if (this->init_ret_codes[3] == RCL_RET_OK) {
+    if (this->init_ret_codes[2] == RCL_RET_OK) {
         (void) rcl_node_fini(&this->rc_node);
         this->rc_node = rcl_get_zero_initialized_node();
-        this->init_ret_codes[3] = -1;
+        this->init_ret_codes[2] = -1;
     }
 
-    if (this->init_ret_codes[2] == RCL_RET_OK) {
+    if (this->init_ret_codes[1] == RCL_RET_OK) {
         (void) rclc_support_fini(&this->rc_support);
-        this->init_ret_codes[2] = -1;
+        this->init_ret_codes[1] = -1;
     }
 
     if (this->init_ret_codes[0] == RCL_RET_OK) {
@@ -218,9 +213,10 @@ void uRosBridgeAgent::uros_fini() {
 }
 
 // Initialize a publisher.
-// Call this before uros_init_executor().
+// Call this after uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosBridgeAgent::init_publisher(rcl_publisher_t *publisher, const rosidl_message_type_support_t *type_support, const char *topic_name, UROS_QOS_MODE qos_mode) {
+    assert(this->init_ret_codes[2] == RCL_RET_OK);
     rcl_ret_t ret_code = -1;
     
     for (int i = 0; i < MAX_PUBLISHERS; i++) {
@@ -261,7 +257,12 @@ rclc_support_t* uRosBridgeAgent::get_support() {
 
 // Get the MicroROS executor.
 rclc_executor_t* uRosBridgeAgent::get_executor(uint8_t num) {
-    return rc_executors[num]->get_executor();
+    if (num < MAX_EXECUTORS) {
+        return rc_executors[num]->get_executor();
+    }
+
+    assert(false);
+    return nullptr;
 }
 
 // Get the MicroROS agent state.
@@ -272,15 +273,15 @@ uRosBridgeAgent::UROS_STATE uRosBridgeAgent::get_agent_state() {
 // This gets called by the executors if they suffer a failure.
 void uRosBridgeAgent::notify_executor_failure(uRosExecAgent *executor, rcl_ret_t code, uint8_t retries) {
     assert(executor != nullptr);
-    LOG(LOG_LVL_ERROR, "Executor %s failed! Disconnecting & stopping agent...", executor->get_agent_name());
+    LOG(LOG_LVL_ERROR, "Executor failure! Disconnecting & stopping agent...");
 
     DiagKvPairs diag_kvs(3);
     diag_kvs.add("code", code);
     diag_kvs.add("retry_count", retries);
     diag_kvs.add("name", executor->get_agent_name());
-    diag_util.publish(DIAG_LVL_ERROR, DIAG_NAME_SYSTEM, DIAG_ID_SYS_UROS, "fatal micro-ROS executor failure", &diag_kvs);
+    diag_util.publish(DIAG_LVL_ERROR, "microros/executors", DIAG_FIRMWARE_HARDWARE_ID, "fatal micro-ROS executor failure", &diag_kvs);
 
-    this->exec_failed_flag = true;
+    this->disco_agent_flag = true;
 }
 
 // Main execution function.
@@ -306,9 +307,9 @@ void uRosBridgeAgent::execute() {
                 current_uros_state = AGENT_CONNECTED;
                 break;
             case AGENT_CONNECTED:
-                current_uros_state = (!this->exec_failed_flag && ping_agent()) ? AGENT_CONNECTED : AGENT_DISCONNECTED;
+                current_uros_state = (!this->disco_agent_flag && ping_agent()) ? AGENT_CONNECTED : AGENT_DISCONNECTED;
                 check_exec_interval(last_exec_time, AGENT_STATE_MACHINE_EXEC_INTERVAL_MS + 10, 
-                                    "Agent state machine exec interval exceeded.", true);
+                                    "Agent state machine exec interval exceeded.", "microros/bridge", true);
                 break;
             case AGENT_DISCONNECTED:
                 cancel_repeating_timer(&exec_timer_rt);
@@ -328,6 +329,8 @@ void uRosBridgeAgent::execute() {
                 watchdog_reset();
                 break;
         }
+
+        taskYIELD();
     }
 }
 

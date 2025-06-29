@@ -42,7 +42,7 @@
 #define AGENT_STATE_MACHINE_EXEC_INTERVAL_MS  200
 
 // Misc.
-#define UROS_INIT_RET_CODE_COUNT  4
+#define UROS_INIT_RET_CODE_COUNT  3
 
 
 // uROS Bridge Agent class
@@ -65,7 +65,7 @@ class uRosBridgeAgent : public Agent
         static uRosBridgeAgent* get_instance();
 
         // Pre-init configuration
-        rmw_ret_t configure(uros_init_function init_function, uros_fini_function fini_function);
+        void configure(uros_init_function init_function, uros_fini_function fini_function);
 
         // Initialize MicroROS node.
         // This function should be called before any other uROS-related functions.
@@ -80,6 +80,9 @@ class uRosBridgeAgent : public Agent
         // This function should be called after uros_init_node().
         // This function is NOT thread-safe.
         rcl_ret_t uros_init_executors();
+
+        // Set the agent disconnect flag to true.
+        void disconnect_agent();
 
         // Finalize MicroROS node, executor, services, subscriptions, 
         // publishers and timers, and stop the agent.
@@ -135,7 +138,7 @@ class uRosBridgeAgent : public Agent
         bool node_initialized = false;
         rcl_publisher_t** publishers = nullptr;
         uRosExecAgent** rc_executors = nullptr;
-        bool exec_failed_flag = false;
+        bool disco_agent_flag = false;
 
     protected:
         // Execution function
