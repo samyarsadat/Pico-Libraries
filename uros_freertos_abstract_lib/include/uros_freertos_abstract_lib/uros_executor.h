@@ -32,7 +32,6 @@
 // Absolute maximums
 #define MAX_SUBSCRIBERS        2
 #define MAX_SERVICES           7
-#define MAX_TIMERS             10
 #define MAX_EXECTR_FAIL_RETRY  4
 
 // Misc.

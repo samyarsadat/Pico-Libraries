@@ -19,10 +19,11 @@
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
 
-#include "adc_lock_lib/adc_lock.h"
+#include "utils_lib/adc/adc_lock.h"
 #include "hardware/adc.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "common/opassert.h"
 
 
 /* ---- Initialize ADC mutex ---- */
@@ -30,19 +31,16 @@ SemaphoreHandle_t adc_mutex = NULL;
 bool adc_init_mutex() {
     if (adc_mutex == NULL) {
         adc_mutex = xSemaphoreCreateMutex();
-        
-        if (adc_mutex != NULL) {
-            return true;
-        }
+        return adc_mutex != NULL;
     }
 
-    return false;
+    return true;
 }
 
 /* ---- Destroy the ADC mutex ---- */
 void adc_destroy_mutex() {
     if (adc_mutex != NULL) {
-        assert(xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE);
+        opassert(xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE);
         vSemaphoreDelete(adc_mutex);
         adc_mutex = NULL;
     }
@@ -65,10 +63,10 @@ bool adc_take_mutex() {
 void adc_release_mutex() {
     if (adc_mutex != NULL) {
         if (__get_IPSR() == 0) {
-            assert(xSemaphoreGive(adc_mutex) == pdTRUE);
+            opassert(xSemaphoreGive(adc_mutex) == pdTRUE);
             return;
         }
 
-        assert(xSemaphoreGiveFromISR(adc_mutex, NULL) == pdTRUE);
+        opassert(xSemaphoreGiveFromISR(adc_mutex, NULL) == pdTRUE);
     }
 }

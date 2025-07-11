@@ -32,11 +32,6 @@ I use these in some of my other projects.
 
 <br>
 
-### `adc_lock_lib`
-A basic C library providing mutex-based locking for ADC access on the Pico.
-
-<br>
-
 ### `cpp_freertos_alloc_lib`
 A library for overriding C++'s default `new` and `delete` operators with variants that use memory allocation function provided by FreeRTOS.
 

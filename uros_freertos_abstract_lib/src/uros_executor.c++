@@ -24,20 +24,21 @@
 
 #include "uros_freertos_abstract_lib/uros_bridge.h"
 #include "uros_freertos_abstract_lib/uros_executor.h"
-#include "uros_freertos_abstract_lib/uros_allocators.h"
+#include "uros_freertos_abstract_lib/internal/uros_allocators.h"
+#include "uros_freertos_abstract_lib/internal/pico_uart_transport.h"
 #include "pico_log_lib/logger.h"
 #include "uros_utils_lib/general.h"
-#include "pico_uart_transports.h"
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
 #include "FreeRTOS.h"
+#include <common/opassert.h>
 
 
 // Note: these must be implemented/declared elsewhere.
 extern Logger logger;
 
 // Logging macro
-#define LOG(lvl, msg, ...) logger.log(__func__, __FILE__, __LINE__, lvl, msg, ##__VA_ARGS__);
+#define LOG(lvl, msg, ...) logger.log(__func__, "", __LINE__, lvl, msg, ##__VA_ARGS__);
 
 
 // Constructor
@@ -91,7 +92,7 @@ bool uRosExecAgent::is_initialized() {
 // This must be called before the object is destroyed.
 void uRosExecAgent::uros_fini() {
     if (this->executor_initialized) {
-        cancel_repeating_timer(&this->exec_timer_rt);  // Calling this on a cancelled timer is safe.
+        (void) cancel_repeating_timer(&this->exec_timer_rt);  // Calling this on a cancelled timer is safe.
         this->stop();
 
         for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
@@ -233,7 +234,9 @@ void uRosExecAgent::execute() {
     assert(this->executor_initialized);
 
     LOG(LOG_LVL_INFO, "Starting micro-ROS executor notification timer (%s)...", this->agent_name);
-    add_repeating_timer_ms(this->timing_conf->exec_interval_ms, uRosExecAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+    opassert(add_repeating_timer_ms(this->timing_conf->exec_interval_ms, 
+                                    uRosExecAgent::exec_notify_timer_callback, 
+                                    (void *) this, &exec_timer_rt));
     
     uint32_t last_exec_time = 0;
     uint8_t exec_fail_retry = 0;
@@ -247,7 +250,7 @@ void uRosExecAgent::execute() {
         if (ret_code != RCL_RET_OK) {
             if (exec_fail_retry == MAX_EXECTR_FAIL_RETRY) {
                 LOG(LOG_LVL_FATAL, "Maximum executor spin failure retries reached! Stopping executor %s!", this->agent_name);
-                cancel_repeating_timer(&exec_timer_rt);
+                (void) cancel_repeating_timer(&exec_timer_rt);
                 this->bridge_instance->notify_executor_failure(this, ret_code, exec_fail_retry);
                 this->stop();
             }
@@ -264,9 +267,12 @@ void uRosExecAgent::execute() {
 bool uRosExecAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
     uRosExecAgent* exec_agent = (uRosExecAgent*) rt->user_data;
     assert(exec_agent != nullptr);
-
-    BaseType_t higher_prio_woken;
-    vTaskNotifyGiveFromISR(exec_agent->get_rtos_task(), &higher_prio_woken);
-    portYIELD_FROM_ISR(higher_prio_woken);
-    return true;
+    TaskHandle_t agent_task = exec_agent->get_rtos_task();
+    
+    if (agent_task != nullptr) {
+        BaseType_t higher_prio_woken;
+        vTaskNotifyGiveFromISR(agent_task, &higher_prio_woken);
+        portYIELD_FROM_ISR(higher_prio_woken);
+        return true;
+    }
 }

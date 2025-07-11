@@ -20,7 +20,7 @@
 */
 
 #include "uros_utils_lib/general.h"
-#include "uros_utils_lib/diag_helper.h"
+#include "uros_utils_lib/diag_util.h"
 #include "uros_common/definitions.h"
 #include "pico_log_lib/logger.h"
 #include <rmw_microros/rmw_microros.h>
@@ -33,22 +33,8 @@ extern Logger logger;
 extern DiagPublisher diag_util;
 
 
-#define ADD_RC_DIAG_KVS()       \
-    DiagKvPairs diag_kvs(3);    \
-    diag_kvs.add("code", rctc); \
-    diag_kvs.add("func", func); \
-    diag_kvs.add("line", line);
-
-rcl_ret_t rc_log(const rcl_ret_t rctc, char* func, const char* file, const uint16_t line) {
-    if (rctc != RCL_RET_OK) {
-        logger.log(func, file, line, LOG_LVL_ERROR, "RCL failure with code: %d", rctc);
-    }
-
-    return rctc;
-}
-
 bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
-                         bool pub_diag, const char* func, const char* file, const uint16_t line) {
+                         bool pub_diag, const char* func, const uint16_t line) {
     assert(system != nullptr && msg != nullptr);
     const uint32_t current_time = time_us_32();
     
@@ -76,7 +62,7 @@ bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_
 
             vPortFree(system_name);
         } else {
-            logger.log(func, file, line, LOG_LVL_WARN, "%s [actual: %ums, limit: %ums]", msg, exec_time_ms, max_exec_time_ms);
+            logger.log(func, "", line, LOG_LVL_WARN, "%s [actual: %ums, limit: %ums]", msg, exec_time_ms, max_exec_time_ms);
         }
 
         return false;

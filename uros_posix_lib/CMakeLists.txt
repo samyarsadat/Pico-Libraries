@@ -1,7 +1,8 @@
-#  Pico Libraries (originally from The ROS robot project)
-#  ADC locking library - Library top level CMake config
-#  Copyright 2024 Samyar Sadat Akhavi
-#  Written by Samyar Sadat Akhavi, 2024.
+#  Pico Libraries - Library top level CMake config
+#  Basic POSIX function implementations for uROS on FreeRTOS.
+#
+#  Copyright 2024-2025 Samyar Sadat Akhavi
+#  Written by Samyar Sadat Akhavi, 2024-2025.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,7 +30,7 @@ endif ()
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set project name and C/C++ standards
-project(adc_lock_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
+project(uros_posix_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 

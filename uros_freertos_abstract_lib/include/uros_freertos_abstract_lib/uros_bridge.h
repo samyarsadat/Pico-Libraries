@@ -50,7 +50,7 @@ class uRosBridgeAgent : public Agent
 {
     public:
         // MicroROS init & fini (pubs, subs, services, timers, executor, node, etc.) function typedefs
-        typedef void (*uros_init_function)(void);
+        typedef bool (*uros_init_function)(void);
         typedef void (*uros_fini_function)(void);
 
         // MicroROS agent state enum
@@ -103,7 +103,7 @@ class uRosBridgeAgent : public Agent
         // Get the MicroROS support.
         rclc_support_t* get_support();
 
-        // Get the MicroROS executor.
+        // Get a MicroROS executor.
         rclc_executor_t* get_executor(uint8_t num);
 
         // Get the MicroROS agent state.

@@ -26,14 +26,15 @@
 #include "uros_freertos_abstract_lib/internal/uros_allocators.h"
 #include "uros_freertos_abstract_lib/internal/pico_uart_transport.h"
 #include "uros_utils_lib/general.h"
-#include "uros_utils_lib/diag_helper.h"
+#include "uros_utils_lib/diag_util.h"
 #include "uros_common/definitions.h"
-#include "uros_common/diag_definitions.h"
+#include "uros_common/diag_msgs.h"
 #include "utils_lib/hardware.h"
 #include "pico_log_lib/logger.h"
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
 #include "hardware/watchdog.h"
+#include "common/opassert.h"
 
 
 // Note: these must be implemented/declared elsewhere.
@@ -41,7 +42,7 @@ extern Logger logger;
 extern DiagPublisher diag_util;
 
 // Logging macro
-#define LOG(lvl, msg, ...) logger.log(__func__, __FILE__, __LINE__, lvl, msg, ##__VA_ARGS__);
+#define LOG(lvl, msg, ...) logger.log(__func__, "", __LINE__, lvl, msg, ##__VA_ARGS__);
 
 
 // Constructor
@@ -93,11 +94,11 @@ void uRosBridgeAgent::configure(uros_init_function init_function, uros_fini_func
     rtos_allocators.zero_allocate = uros_rtos_zero_allocate;
     
     // rcutils_set_default_allocator only checks for allocator validity.
-    assert(rcutils_set_default_allocator(&rtos_allocators));
+    opassert(rcutils_set_default_allocator(&rtos_allocators));
 
     // Set MicroROS transport
     // rmw_uros_set_custom_transport only checks for nullptr arguments.
-    assert(rmw_uros_set_custom_transport(
+    opassert(rmw_uros_set_custom_transport(
         true,
         nullptr,
         pico_serial_transport_open,
@@ -117,7 +118,7 @@ rcl_ret_t uRosBridgeAgent::uros_init_node(const char *node_name, const char *nam
 
         // Initialize the MicroROS node
         this->init_ret_codes[0] = rcl_init_options_init(&this->rcl_init_opts, this->rcl_allocator);
-        assert(rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id) == RCL_RET_OK);
+        opassert(rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id) == RCL_RET_OK);
         this->init_ret_codes[1] = rclc_support_init_with_options(&this->rc_support, 0, nullptr, &this->rcl_init_opts, &this->rcl_allocator);
         this->init_ret_codes[2] = rclc_node_init_default(&this->rc_node, node_name, name_space, &this->rc_support);
 
@@ -180,6 +181,9 @@ void uRosBridgeAgent::disconnect_agent() {
 // This function is NOT thread-safe.
 // Only call it from the bridge fini function.
 void uRosBridgeAgent::uros_fini() {
+    (void) cancel_repeating_timer(&this->exec_timer_rt);
+    this->stop();
+
     for (int i = 0; i < MAX_PUBLISHERS; i++) {
         if (this->publishers[i] != nullptr) {
             (void) rcl_publisher_fini(this->publishers[i], &this->rc_node);
@@ -188,7 +192,7 @@ void uRosBridgeAgent::uros_fini() {
     }
 
     for (int i = 0; i < MAX_EXECUTORS; i++) {
-        if (this->rc_executors[i] != nullptr && this->rc_executors[i]->is_initialized()) {
+        if (this->rc_executors[i] != nullptr) {
             this->rc_executors[i]->uros_fini();
             this->rc_executors[i] = nullptr;
         }
@@ -255,7 +259,7 @@ rclc_support_t* uRosBridgeAgent::get_support() {
     return &rc_support;
 }
 
-// Get the MicroROS executor.
+// Get a MicroROS executor.
 rclc_executor_t* uRosBridgeAgent::get_executor(uint8_t num) {
     if (num < MAX_EXECUTORS) {
         return rc_executors[num]->get_executor();
@@ -274,21 +278,21 @@ uRosBridgeAgent::UROS_STATE uRosBridgeAgent::get_agent_state() {
 void uRosBridgeAgent::notify_executor_failure(uRosExecAgent *executor, rcl_ret_t code, uint8_t retries) {
     assert(executor != nullptr);
     LOG(LOG_LVL_ERROR, "Executor failure! Disconnecting & stopping agent...");
+    this->disco_agent_flag = true;
 
     DiagKvPairs diag_kvs(3);
     diag_kvs.add("code", code);
     diag_kvs.add("retry_count", retries);
     diag_kvs.add("name", executor->get_agent_name());
-    diag_util.publish(DIAG_LVL_ERROR, "microros/executors", DIAG_FIRMWARE_HARDWARE_ID, "fatal micro-ROS executor failure", &diag_kvs);
-
-    this->disco_agent_flag = true;
+    (void) diag_util.publish(DIAG_LVL_ERROR, "microros/executors", DIAG_FIRMWARE_HARDWARE_ID, "fatal micro-ROS executor failure", &diag_kvs);
 }
 
 // Main execution function.
 void uRosBridgeAgent::execute() {
     LOG(LOG_LVL_DEBUG, "Starting micro-ROS bridge notification timer...");
-    add_repeating_timer_ms(AGENT_STATE_MACHINE_EXEC_INTERVAL_MS, 
-                           uRosBridgeAgent::exec_notify_timer_callback, (void *) this, &exec_timer_rt);
+    opassert(add_repeating_timer_ms(AGENT_STATE_MACHINE_EXEC_INTERVAL_MS, 
+                                    uRosBridgeAgent::exec_notify_timer_callback, 
+                                    (void *) this, &exec_timer_rt));
 
     uint32_t last_exec_time = 0;
     current_uros_state = WAITING_FOR_AGENT;
@@ -303,8 +307,7 @@ void uRosBridgeAgent::execute() {
                 break;
             case AGENT_AVAILABLE:
                 LOG(LOG_LVL_INFO, "Micro-ROS agent available!");
-                init_func();
-                current_uros_state = AGENT_CONNECTED;
+                current_uros_state = init_func() ? AGENT_CONNECTED : AGENT_DISCONNECTED;
                 break;
             case AGENT_CONNECTED:
                 current_uros_state = (!this->disco_agent_flag && ping_agent()) ? AGENT_CONNECTED : AGENT_DISCONNECTED;
@@ -312,21 +315,17 @@ void uRosBridgeAgent::execute() {
                                     "Agent state machine exec interval exceeded.", "microros/bridge", true);
                 break;
             case AGENT_DISCONNECTED:
-                cancel_repeating_timer(&exec_timer_rt);
-                LOG(LOG_LVL_WARN, "Micro-ROS agent disconnected! Preparing for reset...");
+                (void) cancel_repeating_timer(&exec_timer_rt);
+                LOG(LOG_LVL_WARN, "Micro-ROS agent disconnected!");
 
                 LOG(LOG_LVL_INFO, "Stopping micro-ROS executors...");
                 for (int i = 0; i < MAX_EXECUTORS; i++) {
-                    if (rc_executors[i] != nullptr && rc_executors[i]->is_initialized()) {
+                    if (rc_executors[i] != nullptr) {
                         rc_executors[i]->stop();
                     }
                 }
                 
-                // Must return at some point! Preferably, quickly.
                 fini_func();
-
-                LOG(LOG_LVL_INFO, "Cleanup completed. Resetting system...");
-                watchdog_reset();
                 break;
         }
 
@@ -338,9 +337,12 @@ void uRosBridgeAgent::execute() {
 bool uRosBridgeAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
     uRosBridgeAgent* bridge_agent = (uRosBridgeAgent*) rt->user_data;
     assert(bridge_agent != nullptr);
-
-    BaseType_t higher_prio_woken;
-    vTaskNotifyGiveFromISR(uRosBridgeAgent::get_instance()->get_rtos_task(), &higher_prio_woken);
-    portYIELD_FROM_ISR(higher_prio_woken);
-    return true;
+    TaskHandle_t agent_task = bridge_agent->get_rtos_task();
+    
+    if (agent_task != nullptr) {
+        BaseType_t higher_prio_woken;
+        vTaskNotifyGiveFromISR(agent_task, &higher_prio_woken);
+        portYIELD_FROM_ISR(higher_prio_woken);
+        return true;
+    }
 }

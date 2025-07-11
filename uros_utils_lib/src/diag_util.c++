@@ -19,7 +19,7 @@
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
 
-#include "uros_utils_lib/diag_helper.h"
+#include "uros_utils_lib/diag_util.h"
 #include "pico_log_lib/logger.h"
 #include "FreeRTOS.h"
 #include "ftoa.c"
@@ -78,7 +78,7 @@ template <typename KT, typename VT>
 bool DiagKvPairs::add(KT key, VT value) {    
     char* ret_key, ret_value;
 
-    if constexpr (std::is_same<VT, unsigned>) {
+    if constexpr (std::is_same<VT, unsigned int>) {
         VALUE_CONV_BUFF();
         (void) utoa(value, ret_value, 10);
     } else if constexpr (std::is_same<VT, int>) {
@@ -89,14 +89,17 @@ bool DiagKvPairs::add(KT key, VT value) {
         (void) ftoa(ret_value, value, KV_FTOA_DIG_AFTER_DEC_POINT);
     } else if constexpr (std::is_same<VT, bool>) {
         ret_value = value ? "true" : "false";
+    } else if constexpr (std::is_same<VT, const char*>) {
+        assert(value != nullptr);
+        ret_value = const_cast<char*>(value);
     } else {
         static_assert(always_false<VT>, "Unsupported value type!");
     }
 
     if constexpr (std::is_same<KT, const char*>) {
         assert(key != nullptr);
-        ret_key = const_cast<char*>(key); 
-    } else if constexpr (std::is_same<KT, unsigned>) {
+        ret_key = const_cast<char*>(key);
+    } else if constexpr (std::is_same<KT, unsigned int>) {
         KEY_CONV_BUFF();
         (void) utoa(key, ret_key, 10);
     } else if constexpr (std::is_same<KT, int>) {
@@ -139,40 +142,31 @@ DiagPublisher::DiagPublisher(const rcl_publisher_t* diag_pub) {
     this->publisher = diag_pub;
 }
 
-void DiagPublisher::enable_diag(bool enabled) {
-    this->diag_enabled = enabled;
-}
-
 rcl_ret_t DiagPublisher::publish(const DIAG_MSG_LEVEL level, const char* name, const char* hw_id, const char* msg, DiagKvPairs* kv_pairs, const bool log) {
     assert(name != nullptr && hw_id != nullptr && msg != nullptr);
     
-    if (this->diag_enabled) {
-        diagnostic_msgs__msg__DiagnosticStatus diag_msg;
-        
-        diag_msg.level = level;
-        diag_msg.name.data = const_cast<char*>(name);
-        diag_msg.name.size = strlen(name);
-        diag_msg.message.data = const_cast<char*>(msg);
-        diag_msg.message.size = strlen(msg);
-        diag_msg.hardware_id.data = const_cast<char*>(hw_id);
-        diag_msg.hardware_id.size = strlen(hw_id);
-        
-        if (kv_pairs != nullptr) {
-            diag_msg.values.data = kv_pairs->arr_ptr();
-            diag_msg.values.size = kv_pairs->size();
-        } else {
-            diag_msg.values.data = nullptr;
-            diag_msg.values.size = 0;
-        }
-
-        if (log) {
-            log_diag_msg(&diag_msg);
-        }
-
-        return rcl_publish(this->publisher, &diag_msg, nullptr);
+    diagnostic_msgs__msg__DiagnosticStatus diag_msg;
+    diag_msg.level = level;
+    diag_msg.name.data = const_cast<char*>(name);
+    diag_msg.name.size = strlen(name);
+    diag_msg.message.data = const_cast<char*>(msg);
+    diag_msg.message.size = strlen(msg);
+    diag_msg.hardware_id.data = const_cast<char*>(hw_id);
+    diag_msg.hardware_id.size = strlen(hw_id);
+    
+    if (kv_pairs != nullptr) {
+        diag_msg.values.data = kv_pairs->arr_ptr();
+        diag_msg.values.size = kv_pairs->size();
+    } else {
+        diag_msg.values.data = nullptr;
+        diag_msg.values.size = 0;
     }
 
-    return RCL_RET_OK;
+    if (log) {
+        log_diag_msg(&diag_msg);
+    }
+
+    return rcl_publish(this->publisher, &diag_msg, nullptr);
 }
 
 void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_msg) {
@@ -204,6 +198,6 @@ void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_ms
     }
 
     kv_buff[kv_buff_offset] = '\0';
-    logger.log(__func__, __FILE__, __LINE__, LOG_LVL_WARN, "Diagnostics [%s]: %s%s", diag_msg->name, diag_msg->message, kv_buff);
+    logger.log(__func__, "", __LINE__, LOG_LVL_WARN, "Diagnostics [%s]: %s%s", diag_msg->name, diag_msg->message, kv_buff);
     vPortFree(kv_buff);
 }

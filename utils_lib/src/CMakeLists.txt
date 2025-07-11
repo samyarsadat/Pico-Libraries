@@ -20,7 +20,8 @@
 # Add source files
 add_library(${PROJECT_NAME} hardware.c
                             math.c++
-                            misc.c++)
+                            misc.c++
+                            adc/adc_lock.c)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
@@ -28,7 +29,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       hardware_pwm
-                                      hardware_adc)
+                                      hardware_adc
+                                      pico_log_lib
+                                      FreeRTOS-Kernel)
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

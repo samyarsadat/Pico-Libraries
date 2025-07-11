@@ -18,7 +18,8 @@
 
 # Add source files
 add_library(${PROJECT_NAME} general.c++
-                            diag_helper.c++)
+                            diag_util.c++
+                            selftest_resp_helpers.c)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)

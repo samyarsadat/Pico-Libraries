@@ -34,16 +34,13 @@
 #define UROS_AGENT_FIND_ATTEMPTS    10
 
 
-// RCL return checker
-rcl_ret_t rc_log(const rcl_ret_t rctc, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
-
 /*  
     Execution interval checker
     Checks the amount of time passed since the last time it was called (with the specific time storage varialble provided)
     Returns false if the execution time has exceeded the specified limit
 */
 bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
-                         bool pub_diag, const char* func=__func__, const char* file=__FILE__, const uint16_t line=__LINE__);
+                         bool pub_diag, const char* func=__func__, const uint16_t line=__LINE__);
 
 // Pings the MicroROS agent
 bool ping_agent(const int timeout_ms=UROS_AGENT_FIND_TIMEOUT_MS, const uint8_t attempts=UROS_AGENT_FIND_ATTEMPTS);

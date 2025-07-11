@@ -32,7 +32,8 @@ target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       micro_ros
                                       FreeRTOS-Kernel
                                       uros_utils_lib
-                                      utils_lib)
+                                      utils_lib
+                                      freertos_agent_lib)
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
