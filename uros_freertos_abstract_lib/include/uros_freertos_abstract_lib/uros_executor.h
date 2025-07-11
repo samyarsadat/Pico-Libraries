@@ -22,6 +22,7 @@
 
 #pragma once
 #include "freertos_agent_lib/rtos_agent.h"
+#include "uros_freertos_abstract_lib/common.h"
 #include "pico/stdlib.h"
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
@@ -36,6 +37,9 @@
 
 // Misc.
 #define EXECTR_AGENT_MEMORY  2048
+
+// Forward declaration of bridge agent class
+class uRosBridgeAgent;
 
 
 // uROS Bridge Agent class
@@ -52,10 +56,6 @@ class uRosExecAgent : public Agent
         // Constructor & Destructor
         uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf);
         virtual ~uRosExecAgent();
-
-        // Agent stop function
-        // This function is called by the bridge agent ONLY.
-        void stop() override;
 
         // Initialize MicroROS executor.
         // This function should be called after uros_init_node().

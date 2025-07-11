@@ -22,7 +22,7 @@
 #include "uros_utils_lib/selftest_resp_helpers.h"
 #include <diagnostic_msgs/msg/key_value.h>
 #include <rosidl_runtime_c/string_functions.h>
-#include "uros_common/opassert.h"
+#include "common/opassert.h"
 
 
 void selftest_resp_free(diagnostic_msgs__srv__SelfTest_Response* resp) {

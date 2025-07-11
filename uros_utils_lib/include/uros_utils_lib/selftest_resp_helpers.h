@@ -24,8 +24,15 @@
 #include <diagnostic_msgs/msg/diagnostic_status.h>
 
 
-void selftest_resp_free(diagnostic_msgs__srv__SelfTest_Response* resp);
-void selftest_resp_init(diagnostic_msgs__srv__SelfTest_Response* resp, const char* id, size_t status_capacity);
-void selftest_stat_set(diagnostic_msgs__msg__DiagnosticStatus* status, const char* hardware_id, const char* name, const char* message, uint8_t level);
-void selftest_stat_kv_init(diagnostic_msgs__msg__DiagnosticStatus* status, size_t kv_capacity);
-void selftest_stat_kv_set(diagnostic_msgs__msg__KeyValue* kv, const char* key, const char* value);
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
+    void selftest_resp_free(diagnostic_msgs__srv__SelfTest_Response* resp);
+    void selftest_resp_init(diagnostic_msgs__srv__SelfTest_Response* resp, const char* id, size_t status_capacity);
+    void selftest_stat_set(diagnostic_msgs__msg__DiagnosticStatus* status, const char* hardware_id, const char* name, const char* message, uint8_t level);
+    void selftest_stat_kv_init(diagnostic_msgs__msg__DiagnosticStatus* status, size_t kv_capacity);
+    void selftest_stat_kv_set(diagnostic_msgs__msg__KeyValue* kv, const char* key, const char* value);
+#ifdef __cplusplus
+}
+#endif

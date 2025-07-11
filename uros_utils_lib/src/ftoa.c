@@ -190,7 +190,7 @@ nanzero:
 
 unsigned int ftoahex(char *s, float f, int *K)
 {
-    static const char hex[16] = "0123456789abcdef";
+    static const char hex[17] = "0123456789abcdef";
     uint32_t k = 6, uval = 0, tmp;
     int mk = 0;
     _f32 f2;

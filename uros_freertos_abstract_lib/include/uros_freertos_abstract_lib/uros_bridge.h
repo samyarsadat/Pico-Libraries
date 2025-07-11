@@ -107,7 +107,7 @@ class uRosBridgeAgent : public Agent
         rclc_executor_t* get_executor(uint8_t num);
 
         // Get the MicroROS agent state.
-        uRosBridgeAgent::UROS_STATE get_agent_state();
+        UROS_STATE get_agent_state();
 
         // This gets called by the executors if they suffer a failure.
         void notify_executor_failure(uRosExecAgent *executor, rcl_ret_t code, uint8_t retries);

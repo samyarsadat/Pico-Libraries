@@ -40,7 +40,7 @@ class Agent {
         virtual ~Agent();
 
         // Start the agent (FreeRTOS task)
-        virtual bool start(UBaseType_t priority=tskIDLE_PRIORITY, UBaseType_t core_affinity_mask, bool set_core_affinity=false);
+        virtual bool start(UBaseType_t priority=tskIDLE_PRIORITY, UBaseType_t core_affinity_mask=(1 << 0), bool set_core_affinity=false);
 
         // Stop the agent (FreeRTOS task)
         virtual void stop();

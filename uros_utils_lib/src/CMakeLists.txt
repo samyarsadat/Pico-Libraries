@@ -19,7 +19,8 @@
 # Add source files
 add_library(${PROJECT_NAME} general.c++
                             diag_util.c++
-                            selftest_resp_helpers.c)
+                            selftest_resp_helpers.c
+                            ftoa.c)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
@@ -27,7 +28,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../include)
 # Link to libraries
 target_link_libraries(${PROJECT_NAME} micro_ros
                                       FreeRTOS-Kernel
-                                      pico_log_lib)
+                                      pico_log_lib
+                                      utils_lib)
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)

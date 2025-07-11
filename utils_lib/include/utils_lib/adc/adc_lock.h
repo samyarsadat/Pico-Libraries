@@ -23,14 +23,21 @@
 #include "pico/stdlib.h"
 
 
-/* ---- Initialize ADC mutex ---- */
-bool adc_init_mutex();
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
+    /* ---- Initialize ADC mutex ---- */
+    bool adc_init_mutex();
 
-/* ---- Destroy the ADC mutex ---- */
-void adc_destroy_mutex();
+    /* ---- Destroy the ADC mutex ---- */
+    void adc_destroy_mutex();
 
-/* ---- Take the ADC mutex ---- */
-bool adc_take_mutex();
+    /* ---- Take the ADC mutex ---- */
+    bool adc_take_mutex();
 
-/* ---- Release the ADC mutex ---- */
-void adc_release_mutex();
+    /* ---- Release the ADC mutex ---- */
+    void adc_release_mutex();
+#ifdef __cplusplus
+}
+#endif

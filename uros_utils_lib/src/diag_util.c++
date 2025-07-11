@@ -21,9 +21,6 @@
 
 #include "uros_utils_lib/diag_util.h"
 #include "pico_log_lib/logger.h"
-#include "FreeRTOS.h"
-#include "ftoa.c"
-#include <type_traits>
 #include <memory>
 
 
@@ -41,7 +38,7 @@ DiagKvPairs::DiagKvPairs(const size_t capacity) {
     this->storage_ptr = static_cast<diagnostic_msgs__msg__KeyValue*>(pvPortCalloc(capacity, sizeof(diagnostic_msgs__msg__KeyValue)));
 
     for (size_t i = 0; i < this->to_free_char_ptrs_size; i++) {
-        this->to_free_char_ptrs[i] == nullptr;
+        this->to_free_char_ptrs[i] = nullptr;
     } 
 }
 
@@ -61,64 +58,13 @@ DiagKvPairs::~DiagKvPairs() {
     }
 }
 
-template<typename T>
-constexpr bool always_false = false;
-
-#define KEY_CONV_BUFF()                                                      \
-    ret_key = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_INT)); \
-    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);    \
-    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_key;
-
-#define VALUE_CONV_BUFF()                                                      \
-    ret_value = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_FLT)); \
-    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);      \
-    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_value;
-
-template <typename KT, typename VT>
-bool DiagKvPairs::add(KT key, VT value) {    
-    char* ret_key, ret_value;
-
-    if constexpr (std::is_same<VT, unsigned int>) {
-        VALUE_CONV_BUFF();
-        (void) utoa(value, ret_value, 10);
-    } else if constexpr (std::is_same<VT, int>) {
-        VALUE_CONV_BUFF();
-        (void) itoa(value, ret_value, 10);
-    } else if constexpr (std::is_same<VT, float>) {
-        VALUE_CONV_BUFF();
-        (void) ftoa(ret_value, value, KV_FTOA_DIG_AFTER_DEC_POINT);
-    } else if constexpr (std::is_same<VT, bool>) {
-        ret_value = value ? "true" : "false";
-    } else if constexpr (std::is_same<VT, const char*>) {
-        assert(value != nullptr);
-        ret_value = const_cast<char*>(value);
-    } else {
-        static_assert(always_false<VT>, "Unsupported value type!");
-    }
-
-    if constexpr (std::is_same<KT, const char*>) {
-        assert(key != nullptr);
-        ret_key = const_cast<char*>(key);
-    } else if constexpr (std::is_same<KT, unsigned int>) {
-        KEY_CONV_BUFF();
-        (void) utoa(key, ret_key, 10);
-    } else if constexpr (std::is_same<KT, int>) {
-        KEY_CONV_BUFF();
-        (void) itoa(key, ret_key, 10);
-    } else {
-        static_assert(always_false<KT>, "Unsupported key type!");
-    }
-
-    return this->add(ret_key, ret_value);
-}
-
-bool DiagKvPairs::add(const char* key, const char* value) {
+bool DiagKvPairs::add(char* key, char* value) {
     assert(key != nullptr && value != nullptr);
 
     if (this->arr_size < this->capacity) {
         this->storage_ptr[arr_size] = {
-            .key = {const_cast<char*>(key), strlen(key)},
-            .value = {const_cast<char*>(value), strlen(value)}
+            .key = {key, strlen(key), 0},
+            .value = {value, strlen(value), 0}
         };
         this->arr_size++;
         return true;

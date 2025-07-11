@@ -24,6 +24,7 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "common/opassert.h"
+#include "cmsis_gcc.h"
 
 
 /* ---- Initialize ADC mutex ---- */

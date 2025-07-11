@@ -27,10 +27,13 @@
 
 
 void* uros_rtos_allocate(size_t size, void* state) {
+    (void) state;
     return (void*) pvPortMalloc(size);
 }
 
 void* uros_rtos_reallocate(void* pointer, size_t size, void* state) {
+    (void) state;
+
     if (pointer == NULL) {
         return (void*) pvPortMalloc(size);
     }
@@ -40,10 +43,12 @@ void* uros_rtos_reallocate(void* pointer, size_t size, void* state) {
 }
 
 void* uros_rtos_zero_allocate(size_t number_of_elements, size_t size_of_element, void* state) {
+    (void) state;
     void *res = (void*) pvPortMalloc(number_of_elements * size_of_element);
     return memset(res, 0, number_of_elements * size_of_element);  // memset() returns 'res' unmodified.
 }
 
 void uros_rtos_deallocate(void* pointer, void* state) {
+    (void) state;
     vPortFree(pointer);
 }

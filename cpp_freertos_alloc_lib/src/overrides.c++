@@ -118,12 +118,3 @@ void operator delete(void* ptr, size_t, std::align_val_t alignment) noexcept {
 void operator delete[](void* ptr, size_t, std::align_val_t alignment) noexcept {
     operator delete(ptr, alignment);
 }
-
-// Placement new operators (standard library compatibility)
-void* operator new(size_t, void* ptr) noexcept {
-    return ptr;
-}
-
-void* operator new[](size_t, void* ptr) noexcept {
-    return ptr;
-}

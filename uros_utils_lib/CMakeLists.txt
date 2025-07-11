@@ -31,7 +31,7 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 # Set project name and C/C++ standards
 project(uros_utils_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Initialize the Pico SDK
 pico_sdk_init()

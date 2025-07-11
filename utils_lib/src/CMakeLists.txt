@@ -19,8 +19,6 @@
 
 # Add source files
 add_library(${PROJECT_NAME} hardware.c
-                            math.c++
-                            misc.c++
                             adc/adc_lock.c)
 
 # Include header files
@@ -31,6 +29,7 @@ target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       hardware_pwm
                                       hardware_adc
                                       pico_log_lib
+                                      cmsis_core
                                       FreeRTOS-Kernel)
 
 # Enable all warnings

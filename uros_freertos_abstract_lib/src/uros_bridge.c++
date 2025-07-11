@@ -343,6 +343,7 @@ bool uRosBridgeAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
         BaseType_t higher_prio_woken;
         vTaskNotifyGiveFromISR(agent_task, &higher_prio_woken);
         portYIELD_FROM_ISR(higher_prio_woken);
-        return true;
     }
+
+    return true;
 }

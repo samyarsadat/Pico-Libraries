@@ -20,8 +20,11 @@
 */
 
 #pragma once
+#include "pico/stdlib.h"
 #include <rcl/rcl.h>
 #include <diagnostic_msgs/msg/diagnostic_status.h>
+#include <type_traits>
+#include "FreeRTOS.h"
 
 
 #define KV_CONVERSION_BUFF_SIZE_FLT  50
@@ -36,6 +39,26 @@ enum DIAG_MSG_LEVEL {
     DIAG_LVL_STALE = diagnostic_msgs__msg__DiagnosticStatus__STALE
 };
 
+#define KEY_CONV_BUFF()                                                      \
+    ret_key = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_INT)); \
+    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);    \
+    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_key;
+
+#define VALUE_CONV_BUFF()                                                      \
+    ret_value = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_FLT)); \
+    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);      \
+    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_value;
+
+// FTOA function from ftoa.c
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
+    int ftoa(char* buffer, float value, int digits_after_dec_point);
+#ifdef __cplusplus
+}
+#endif
+
 
 /*
     Key-value pair array class.
@@ -45,12 +68,48 @@ class DiagKvPairs {
         DiagKvPairs(const size_t capacity);
         ~DiagKvPairs();
 
+        // Base implementation.
+        bool add(char* key, char* value);
+
         // For integer (VT & KT), float (VT only), and boolean (VT only) types.
         template <typename KT, typename VT>
-        bool add(KT key, VT value);
+        bool add(KT key, VT value) {    
+            char* ret_key;
+            char* ret_value;
 
-        // Base implementation.
-        bool add(const char* key, const char* value);
+            if constexpr (std::is_same_v<VT, uint> || std::is_same_v<VT, uint8_t> || std::is_same_v<VT, uint16_t> || std::is_same_v<VT, uint32_t>) {
+                VALUE_CONV_BUFF();
+                (void) utoa(static_cast<uint>(value), ret_value, 10);
+            } else if constexpr (std::is_same_v<VT, int> || std::is_same_v<VT, int16_t> || std::is_same_v<VT, int32_t>) {
+                VALUE_CONV_BUFF();
+                (void) itoa(static_cast<int>(value), ret_value, 10);
+            } else if constexpr (std::is_same_v<VT, float> || std::is_same_v<VT, double>) {
+                VALUE_CONV_BUFF();
+                (void) ftoa(ret_value, static_cast<float>(value), KV_FTOA_DIG_AFTER_DEC_POINT);
+            } else if constexpr (std::is_same_v<VT, bool>) {
+                ret_value = value ? "true" : "false";
+            } else if constexpr (std::is_same_v<VT, const char*> || std::is_same_v<VT, char*>) {
+                assert(value != nullptr);
+                ret_value = const_cast<char*>(value);
+            } else {
+                static_assert(false, "Unsupported value type!");
+            }
+
+            if constexpr (std::is_same_v<KT, const char*> || std::is_same_v<KT, char*>) {
+                assert(key != nullptr);
+                ret_key = const_cast<char*>(key);
+            } else if constexpr (std::is_same_v<KT, uint> || std::is_same_v<VT, uint8_t> || std::is_same_v<KT, uint16_t> || std::is_same_v<KT, uint32_t>) {
+                KEY_CONV_BUFF();
+                (void) utoa(static_cast<uint>(key), ret_key, 10);
+            } else if constexpr (std::is_same_v<KT, int> || std::is_same_v<KT, int16_t> || std::is_same_v<KT, int32_t>) {
+                KEY_CONV_BUFF();
+                (void) itoa(static_cast<int>(key), ret_key, 10);
+            } else {
+                static_assert(false, "Unsupported key type!");
+            }
+
+            return this->add(ret_key, ret_value);
+        }
 
         size_t size();
         diagnostic_msgs__msg__KeyValue* arr_ptr();
