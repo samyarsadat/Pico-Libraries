@@ -33,7 +33,7 @@ extern Logger logger;
 extern DiagPublisher diag_util;
 
 
-bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
+bool check_exec_interval(uint32_t &last_call_time, uint16_t max_exec_time_ms, const char* msg, const char* system, 
                          bool pub_diag, const char* func, const uint16_t line) {
     assert(system != nullptr && msg != nullptr);
     const uint32_t current_time = time_us_32();

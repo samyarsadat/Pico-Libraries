@@ -1,5 +1,6 @@
 /*
     FTOA implementation taken from https://github.com/bofh453/ftoa-fast.
+    Unnecessary parts removed.
 */
 
 #include <stdint.h>
@@ -31,16 +32,6 @@ typedef union _f32
     unsigned int i;
 } _f32;
 
-#if defined(__x86_64__) || defined(__amd64__)
-static uint64_t 
-multiply(uint64_t x, uint32_t y)
-{
-    uint64_t y0 = ((uint64_t)y << 32), ac, tmp;
-    __asm__ __volatile__("mulq %3" : "=a" (tmp), "=d" (ac) :"%0" (x), "rm" (y0));
-    //tmp += 0x80000000; /* Round.  */
-    return ac + (tmp >> 63);
-}
-#else
 static uint64_t 
 multiply(uint64_t x, uint32_t y)
 {
@@ -48,7 +39,6 @@ multiply(uint64_t x, uint32_t y)
     uint64_t xhi = (x >> 32);
     return ((xhi * y) + ((xlo * y) >> 31));
 }
-#endif
 
 static int
 k_comp(int n)
@@ -186,52 +176,4 @@ nanzero:
         *_K = mk;
     }
     return len;
-}
-
-unsigned int ftoahex(char *s, float f, int *K)
-{
-    static const char hex[17] = "0123456789abcdef";
-    uint32_t k = 6, uval = 0, tmp;
-    int mk = 0;
-    _f32 f2;
-
-    /* Handle NaN/zero.  */
-    if (f != f) {
-        *(uint32_t*)s = 0x004E614E;
-        goto nanzero;
-    }
-    if (!f) {
-        /* f is NaN, +0 or -0.  */
-        *(uint32_t*)s = 0x00302E30;
-nanzero:
-        return 3;
-    }
-    
-    f2.f = fabsf(f);
-    mk = ((int)(f2.i >> 23) - 127);
-    if(K) {
-        *K = mk;
-    }
-    f2.i &= 0x007fffff;
-    f2.i <<= 1;
-    uval = f2.i;
-    s[0] = '0';
-    s[1] = 'x';
-    s[2] = '1';
-    s[3] = '.';
-    while(k--) {
-        tmp = (uval & 0x0f);
-        s[4+k] = hex[tmp]; uval >>= 4;
-    }
-    s[10] = 'p';
-    if(mk < 0) {
-        s[11] = '-';
-        mk = -mk;
-    } else {
-        s[11] = '+';
-    }
-    s[12] = (mk / 10)+0x30;
-    s[13] = (mk % 10)+0x30;
-    s[14] = 0;
-    return 14;
 }
