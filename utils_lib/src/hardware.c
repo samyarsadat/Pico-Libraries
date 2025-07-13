@@ -104,11 +104,3 @@ int get_gpio_adc_channel(uint gpio) {
     
     return -1;  // Non-ADC pin provided or platform undefined.
 }
-
-// Resets the pico using the watchdog timer
-void watchdog_reset() {
-    watchdog_disable();
-    watchdog_reboot(0, 0, 0);
-    watchdog_enable(1, true);
-    while (1);  // Wait for the watchdog to reset the system.
-}

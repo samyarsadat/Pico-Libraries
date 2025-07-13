@@ -17,7 +17,7 @@
 
 
 # Add source files
-add_library(${PROJECT_NAME} general.c++
+add_library(${PROJECT_NAME} misc.c++
                             diag_util.c++
                             selftest_resp_helpers.c
                             ftoa.c)

@@ -40,7 +40,7 @@
     Returns false if the execution time has exceeded the specified limit
 */
 bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, const char* system, 
-                         bool pub_diag, const char* func=__func__, const uint16_t line=__LINE__);
+                         bool pub_diag, const char* func=__FUNCTION__, const uint16_t line=__LINE__);
 
 // Pings the MicroROS agent
 bool ping_agent(const int timeout_ms=UROS_AGENT_FIND_TIMEOUT_MS, const uint8_t attempts=UROS_AGENT_FIND_ATTEMPTS);

@@ -55,9 +55,6 @@ extern "C"
 
     // Returns the ADC channel of a given GPIO pin
     int get_gpio_adc_channel(uint gpio);
-
-    // Resets the pico using the watchdog timer
-    void watchdog_reset();
 #ifdef __cplusplus
 }
 #endif

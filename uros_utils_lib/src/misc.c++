@@ -19,7 +19,7 @@
     along with this program.  If not, see <https: www.gnu.org/licenses/>.
 */
 
-#include "uros_utils_lib/general.h"
+#include "uros_utils_lib/misc.h"
 #include "uros_utils_lib/diag_util.h"
 #include "uros_common/definitions.h"
 #include "pico_log_lib/logger.h"

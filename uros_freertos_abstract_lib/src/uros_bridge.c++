@@ -25,7 +25,7 @@
 #include "uros_freertos_abstract_lib/uros_bridge.h"
 #include "uros_freertos_abstract_lib/internal/uros_allocators.h"
 #include "uros_freertos_abstract_lib/internal/pico_uart_transport.h"
-#include "uros_utils_lib/general.h"
+#include "uros_utils_lib/misc.h"
 #include "uros_utils_lib/diag_util.h"
 #include "uros_common/definitions.h"
 #include "uros_common/diag_msgs.h"
