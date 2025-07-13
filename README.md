@@ -20,6 +20,9 @@ I use these in some of my other projects.
 
 ## Included Libraries
 
+> [!WARNING]
+> All of these libraries are currently undergoing testing! They aren't ready for use in "production".
+
 > [!NOTE]
 > All of these libraries support both the RP2040 and the RP2350.
 
@@ -55,7 +58,6 @@ An abstraction library for integrating microROS with FreeRTOS. It makes configur
 ### `uros_utils_lib`
 Provides certain utilities and helpers for microROS. Currently, it includes:
  - A diagnostics publishing abstraction with a key-value pair abstraction.
- - RCL return value checking function.
  - Execution time monitoring and alerting function.
  - MicroROS agent `ping()` function.
 
@@ -73,7 +75,6 @@ Generic utility and helper functions for use with the Pico. Cuurently, it includ
    - GPIO PWM output setting helper.
    - Get processor temperature function.
    - Get GPIO ADC channel function.
-   - Processor reset function (using watchdog timer).
  - Miscellaneous utilities.
    - Function for getting a `std::string` representation of a Boolean array.
 
