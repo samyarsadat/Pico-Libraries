@@ -27,19 +27,12 @@
 #include "FreeRTOS.h"
 
 
-#define KV_CONVERSION_BUFF_SIZE  50
+#define KV_CONVERSION_BUFF_SIZE_FLT  50
+#define KV_CONVERSION_BUFF_SIZE_INT  12
 #define KV_FTOA_DIG_AFTER_DEC_POINT  7
 
-// Diagnostics message levels
-enum DIAG_MSG_LEVEL {
-    DIAG_LVL_OK    = diagnostic_msgs__msg__DiagnosticStatus__OK,
-    DIAG_LVL_WARN  = diagnostic_msgs__msg__DiagnosticStatus__WARN,
-    DIAG_LVL_ERROR = diagnostic_msgs__msg__DiagnosticStatus__ERROR,
-    DIAG_LVL_STALE = diagnostic_msgs__msg__DiagnosticStatus__STALE
-};
-
-#define VALUE_CONV_BUFF()                                                 \
-    ret_ptr = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE));  \
+#define _DKP_VALUE_CONV_BUFF(size)                                        \
+    ret_ptr = static_cast<char*>(pvPortMalloc(size));                     \
     assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size); \
     this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_ptr;
 
@@ -52,6 +45,14 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+// Diagnostics message levels
+enum DIAG_MSG_LEVEL {
+    DIAG_LVL_OK    = diagnostic_msgs__msg__DiagnosticStatus__OK,
+    DIAG_LVL_WARN  = diagnostic_msgs__msg__DiagnosticStatus__WARN,
+    DIAG_LVL_ERROR = diagnostic_msgs__msg__DiagnosticStatus__ERROR,
+    DIAG_LVL_STALE = diagnostic_msgs__msg__DiagnosticStatus__STALE
+};
 
 
 /*
@@ -97,13 +98,13 @@ class DiagKvPairs {
                 assert(value != nullptr);
                 return const_cast<char*>(value);
             } else if constexpr (is_unsigned_integer_v<TD>) {
-                VALUE_CONV_BUFF();
+                _DKP_VALUE_CONV_BUFF(KV_CONVERSION_BUFF_SIZE_INT);
                 (void) utoa(static_cast<uint>(value), ret_ptr, 10);
             } else if constexpr (is_signed_integer_v<TD>) {
-                VALUE_CONV_BUFF();
+                _DKP_VALUE_CONV_BUFF(KV_CONVERSION_BUFF_SIZE_INT);
                 (void) itoa(static_cast<int>(value), ret_ptr, 10);
             } else if constexpr (std::is_floating_point_v<TD>) {
-                VALUE_CONV_BUFF();
+                _DKP_VALUE_CONV_BUFF(KV_CONVERSION_BUFF_SIZE_FLT);
                 (void) ftoa(ret_ptr, static_cast<float>(value), KV_FTOA_DIG_AFTER_DEC_POINT);
             } else {
                 static_assert(always_false_v<TD>, "Unsupported type!");
