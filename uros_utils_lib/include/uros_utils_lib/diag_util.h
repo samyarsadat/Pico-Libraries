@@ -27,8 +27,7 @@
 #include "FreeRTOS.h"
 
 
-#define KV_CONVERSION_BUFF_SIZE_FLT  50
-#define KV_CONVERSION_BUFF_SIZE_INT  12
+#define KV_CONVERSION_BUFF_SIZE  50
 #define KV_FTOA_DIG_AFTER_DEC_POINT  7
 
 // Diagnostics message levels
@@ -39,15 +38,10 @@ enum DIAG_MSG_LEVEL {
     DIAG_LVL_STALE = diagnostic_msgs__msg__DiagnosticStatus__STALE
 };
 
-#define KEY_CONV_BUFF()                                                      \
-    ret_key = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_INT)); \
-    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);    \
-    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_key;
-
-#define VALUE_CONV_BUFF()                                                      \
-    ret_value = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE_FLT)); \
-    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size);      \
-    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_value;
+#define VALUE_CONV_BUFF()                                                 \
+    ret_ptr = static_cast<char*>(pvPortMalloc(KV_CONVERSION_BUFF_SIZE));  \
+    assert(this->to_free_char_ptrs_index < this->to_free_char_ptrs_size); \
+    this->to_free_char_ptrs[this->to_free_char_ptrs_index++] = ret_ptr;
 
 // FTOA function from ftoa.c
 #ifdef __cplusplus
@@ -68,47 +62,14 @@ class DiagKvPairs {
         DiagKvPairs(const size_t capacity);
         ~DiagKvPairs();
 
-        // Base implementation.
-        bool add(char* key, char* value);
-
-        // For integer (VT & KT), float (VT only), and boolean (VT only) types.
         template <typename KT, typename VT>
-        bool add(KT key, VT value) {    
-            char* ret_key;
-            char* ret_value;
-
-            if constexpr (std::is_same_v<VT, uint> || std::is_same_v<VT, uint8_t> || std::is_same_v<VT, uint16_t> || std::is_same_v<VT, uint32_t>) {
-                VALUE_CONV_BUFF();
-                (void) utoa(static_cast<uint>(value), ret_value, 10);
-            } else if constexpr (std::is_same_v<VT, int> || std::is_same_v<VT, int16_t> || std::is_same_v<VT, int32_t>) {
-                VALUE_CONV_BUFF();
-                (void) itoa(static_cast<int>(value), ret_value, 10);
-            } else if constexpr (std::is_same_v<VT, float> || std::is_same_v<VT, double>) {
-                VALUE_CONV_BUFF();
-                (void) ftoa(ret_value, static_cast<float>(value), KV_FTOA_DIG_AFTER_DEC_POINT);
-            } else if constexpr (std::is_same_v<VT, bool>) {
-                ret_value = value ? "true" : "false";
-            } else if constexpr (std::is_same_v<VT, const char*> || std::is_same_v<VT, char*>) {
-                assert(value != nullptr);
-                ret_value = const_cast<char*>(value);
-            } else {
-                static_assert(false, "Unsupported value type!");
+        bool add(KT key, VT value) {
+            if (this->arr_size < this->capacity) {
+                this->add(conv_to_str(key), conv_to_str(value));
+                return true;
             }
 
-            if constexpr (std::is_same_v<KT, const char*> || std::is_same_v<KT, char*>) {
-                assert(key != nullptr);
-                ret_key = const_cast<char*>(key);
-            } else if constexpr (std::is_same_v<KT, uint> || std::is_same_v<VT, uint8_t> || std::is_same_v<KT, uint16_t> || std::is_same_v<KT, uint32_t>) {
-                KEY_CONV_BUFF();
-                (void) utoa(static_cast<uint>(key), ret_key, 10);
-            } else if constexpr (std::is_same_v<KT, int> || std::is_same_v<KT, int16_t> || std::is_same_v<KT, int32_t>) {
-                KEY_CONV_BUFF();
-                (void) itoa(static_cast<int>(key), ret_key, 10);
-            } else {
-                static_assert(false, "Unsupported key type!");
-            }
-
-            return this->add(ret_key, ret_value);
+            return false;
         }
 
         size_t size();
@@ -121,6 +82,43 @@ class DiagKvPairs {
         size_t to_free_char_ptrs_size = 0;
         char** to_free_char_ptrs;
         size_t to_free_char_ptrs_index = 0;
+
+        // Base implementation.
+        void add(char* key, char* value);
+
+        template<typename T>
+        char* conv_to_str(T&& value) {
+            using TD = std::decay_t<T>;
+            char* ret_ptr = nullptr;
+            
+            if constexpr (std::is_same_v<TD, bool>) {
+                return value ? "true" : "false";
+            } else if constexpr (std::is_same_v<TD, const char*> || std::is_same_v<TD, char*>) {
+                assert(value != nullptr);
+                return const_cast<char*>(value);
+            } else if constexpr (is_unsigned_integer_v<TD>) {
+                VALUE_CONV_BUFF();
+                (void) utoa(static_cast<uint>(value), ret_ptr, 10);
+            } else if constexpr (is_signed_integer_v<TD>) {
+                VALUE_CONV_BUFF();
+                (void) itoa(static_cast<int>(value), ret_ptr, 10);
+            } else if constexpr (std::is_floating_point_v<TD>) {
+                VALUE_CONV_BUFF();
+                (void) ftoa(ret_ptr, static_cast<float>(value), KV_FTOA_DIG_AFTER_DEC_POINT);
+            } else {
+                static_assert(always_false_v<TD>, "Unsupported type!");
+            }
+
+            return ret_ptr;
+        }
+        
+        template<typename T>
+        static constexpr bool is_unsigned_integer_v = std::is_integral_v<T> && std::is_unsigned_v<T> && !std::is_same_v<T, bool>;
+        template<typename T>
+        static constexpr bool is_signed_integer_v = std::is_integral_v<T> && std::is_signed_v<T>;
+
+        template<typename T>
+        static constexpr bool always_false_v = false;
 };
 
 

@@ -58,27 +58,21 @@ DiagKvPairs::~DiagKvPairs() {
     }
 }
 
-bool DiagKvPairs::add(char* key, char* value) {
-    assert(key != nullptr && value != nullptr);
-
-    if (this->arr_size < this->capacity) {
-        this->storage_ptr[arr_size] = {
-            .key = {key, strlen(key), 0},
-            .value = {value, strlen(value), 0}
-        };
-        this->arr_size++;
-        return true;
-    }
-
-    return false;
-}
-
 size_t DiagKvPairs::size() {
     return this->arr_size;
 }
 
 diagnostic_msgs__msg__KeyValue* DiagKvPairs::arr_ptr() {
     return this->storage_ptr;
+}
+
+void DiagKvPairs::add(char* key, char* value) {
+    assert(key != nullptr && value != nullptr);
+    this->storage_ptr[arr_size] = {
+        .key = {key, strlen(key), 0},
+        .value = {value, strlen(value), 0}
+    };
+    this->arr_size++;
 }
 
 
