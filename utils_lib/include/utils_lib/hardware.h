@@ -22,6 +22,7 @@
 
 #pragma once
 #include "pico/stdlib.h"
+#include "hardware/watchdog.h"
 
 
 // ---- Definitions ----
@@ -54,10 +55,26 @@ extern "C"
     float get_proc_temp();
 
     // Returns the ADC channel of a given GPIO pin
-    int get_gpio_adc_channel(uint gpio);
+    inline int get_gpio_adc_channel(uint gpio) {
+        #if defined(PICO_RP2040) || defined(PICO_RP2350A)
+        if (gpio >= ADC_BASE_PIN && gpio <= ADC_BASE_PIN + 3) {
+            return gpio - ADC_BASE_PIN;
+        }
+        #elif defined(PICO_RP2350B)
+        if (gpio >= ADC_BASE_PIN && gpio <= ADC_BASE_PIN + 7) {
+            return gpio - ADC_BASE_PIN;
+        }
+        #endif
+        
+        return -1;  // Non-ADC pin provided or platform undefined.
+    }
 
     // Reset the chip using the watchdog.
-    void watchdog_reset();
+    inline void watchdog_reset() {
+        watchdog_disable();
+        watchdog_enable(0, true);
+        while (1);
+    }
 #ifdef __cplusplus
 }
 #endif

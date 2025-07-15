@@ -23,7 +23,6 @@
 #include "utils_lib/hardware.h"
 #include "hardware/adc.h"
 #include "hardware/pwm.h"
-#include "hardware/watchdog.h"
 
 
 // ---- Functions ----
@@ -88,26 +87,4 @@ float get_proc_temp() {
     const double reading_volts = adc_read() * ADC_CONVERSION_FACTOR;
     const float reading_celsius = 27 - (reading_volts - 0.706) / 0.001721;  // Formula is valid for RP2040 and RP2350.
     return reading_celsius;
-}
-
-// Returns the ADC channel of a given GPIO pin
-int get_gpio_adc_channel(uint gpio) {
-    #if defined(PICO_RP2040) || defined(PICO_RP2350A)
-    if (gpio >= ADC_BASE_PIN && gpio <= ADC_BASE_PIN + 3) {
-        return gpio - ADC_BASE_PIN;
-    }
-    #elif defined(PICO_RP2350B)
-    if (gpio >= ADC_BASE_PIN && gpio <= ADC_BASE_PIN + 7) {
-        return gpio - ADC_BASE_PIN;
-    }
-    #endif
-    
-    return -1;  // Non-ADC pin provided or platform undefined.
-}
-
-// Reset the chip using the watchdog.
-void watchdog_reset() {
-    watchdog_disable();
-    watchdog_enable(0, 1);
-    while (1);
 }
