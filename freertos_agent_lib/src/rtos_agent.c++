@@ -27,8 +27,8 @@
 // Constructor
 Agent::Agent(const char* name, configSTACK_DEPTH_TYPE task_stack_depth) {
     this->stack_depth = task_stack_depth;
-    strncpy(this->agent_name, name, MAX_NAME_LENGTH - 1);
-    this->agent_name[MAX_NAME_LENGTH - 1] = '\0';  // Null-terminate anyway, as strncpy() does not guarantee it.
+    (void) strncpy(this->agent_name, name, AGENT_MAX_NAME_LENGTH - 1);
+    this->agent_name[AGENT_MAX_NAME_LENGTH - 1] = '\0';  // Null-terminate anyway, as strncpy() does not guarantee it.
 }
 
 // Destructor

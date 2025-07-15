@@ -28,15 +28,24 @@
 #include <rclc/executor.h>
 #include <vector>
 #include "semphr.h"
+#include <string_view>
 
 
 // Absolute maximums
-#define MAX_SUBSCRIBERS        2
-#define MAX_SERVICES           7
+#ifndef MAX_SUBSCRIBERS
+#define MAX_SUBSCRIBERS  2
+#endif
+#ifndef MAX_SERVICES
+#define MAX_SERVICES  7
+#endif
+#ifndef MAX_EXECTR_FAIL_RETRY
 #define MAX_EXECTR_FAIL_RETRY  4
+#endif
 
 // Misc.
 #define EXECTR_AGENT_MEMORY  2048
+#define EXECTR_SYSNAME_PATH  "microros/executor/"
+constexpr size_t EXECTR_SYSNAME_PATH_LEN = std::string_view(EXECTR_SYSNAME_PATH).size();
 
 // Forward declaration of bridge agent class
 class uRosBridgeAgent;
@@ -105,6 +114,7 @@ class uRosExecAgent : public Agent
         uRosBridgeAgent* bridge_instance = nullptr;
         rclc_executor_t rc_executor;
         exectr_timing_conf_t* timing_conf;
+        char exec_sys_name[EXECTR_SYSNAME_PATH_LEN + AGENT_MAX_NAME_LENGTH];
 
         bool node_initialized = false;
         bool executor_initialized = false;

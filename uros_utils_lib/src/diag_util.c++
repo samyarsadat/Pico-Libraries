@@ -121,14 +121,14 @@ void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_ms
     size_t kv_buff_offset = 0;
 
     constexpr size_t kv_fmt_num = 4;
-    char* kv_fmt[kv_fmt_num] = {"\r\n - ", nullptr, ": ", nullptr};
+    char* kv_fmt[kv_fmt_num] = {"\r\n\t- ", nullptr, ": ", nullptr};
     size_t kv_fmt_sizes[kv_fmt_num] = {5, 0, 2, 0};
 
     for (size_t i = 0; i < diag_msg->values.size; i++) {
-        kv_fmt[1] = diag_msg->values.data->key.data;
-        kv_fmt[3] = diag_msg->values.data->value.data;
-        kv_fmt_sizes[1] = diag_msg->values.data->key.size;
-        kv_fmt_sizes[3] = diag_msg->values.data->value.size;
+        kv_fmt[1] = diag_msg->values.data[i].key.data;
+        kv_fmt[3] = diag_msg->values.data[i].value.data;
+        kv_fmt_sizes[1] = diag_msg->values.data[i].key.size;
+        kv_fmt_sizes[3] = diag_msg->values.data[i].value.size;
 
         for (size_t i = 0; i < kv_fmt_num; i++) {
             assert(kv_fmt_sizes[i] < kv_buff_size - kv_buff_offset);
@@ -138,6 +138,6 @@ void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_ms
     }
 
     kv_buff[kv_buff_offset] = '\0';
-    logger.log(__func__, "", __LINE__, LOG_LVL_WARN, "Diagnostics [%s]: %s%s", diag_msg->name, diag_msg->message, kv_buff);
+    logger.log(__func__, "", __LINE__, LOG_LVL_WARN, "[%s]: %s%s", diag_msg->name.data, diag_msg->message.data, kv_buff);
     vPortFree(kv_buff);
 }

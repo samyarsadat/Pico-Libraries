@@ -33,13 +33,20 @@
 
 
 // Absolute maximums
-#define MAX_EXECUTORS   2
+#ifndef MAX_EXECUTORS
+#define MAX_EXECUTORS  2
+#endif
+#ifndef MAX_PUBLISHERS
 #define MAX_PUBLISHERS  8
+#endif
 
 // Agent config
-#define BRIDGE_AGENT_MEMORY                   2048   // Words
-#define BRIDGE_AGENT_NAME                     "uros_bridge_agent"
+#define BRIDGE_AGENT_MEMORY  1024   // Words
+#define BRIDGE_AGENT_NAME    "uros_bridge_agent"
+
+#ifndef AGENT_STATE_MACHINE_EXEC_INTERVAL_MS
 #define AGENT_STATE_MACHINE_EXEC_INTERVAL_MS  200
+#endif
 
 // Misc.
 #define UROS_INIT_RET_CODE_COUNT  3

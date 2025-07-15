@@ -47,6 +47,9 @@ uRosExecAgent::uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf
     this->subscribers = static_cast<rcl_subscription_t**>(pvPortCalloc(MAX_SUBSCRIBERS, sizeof(rcl_subscription_t*)));
     this->services = static_cast<rcl_service_t**>(pvPortCalloc(MAX_SERVICES, sizeof(rcl_service_t*)));
     this->rc_executor = rclc_executor_get_zero_initialized_executor();
+
+    strcpy(this->exec_sys_name, EXECTR_SYSNAME_PATH);
+    strcat(this->exec_sys_name, this->agent_name);
 }
 
 // Destructor
@@ -92,6 +95,7 @@ bool uRosExecAgent::is_initialized() {
 // This must be called before the object is destroyed.
 void uRosExecAgent::uros_fini() {
     if (this->executor_initialized) {
+        assert(this->bridge_instance != nullptr);
         (void) cancel_repeating_timer(&this->exec_timer_rt);  // Calling this on a cancelled timer is safe.
         this->stop();
 
@@ -121,6 +125,7 @@ void uRosExecAgent::uros_fini() {
 // Call this before uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const rosidl_message_type_support_t *type_support, const char *topic_name, UROS_QOS_MODE qos_mode) {
+    assert(this->bridge_instance != nullptr);
     rcl_ret_t ret_code = -1;
 
     for (int i = 0; i < MAX_SUBSCRIBERS; i++) {
@@ -149,6 +154,7 @@ rcl_ret_t uRosExecAgent::init_subscriber(rcl_subscription_t *subscriber, const r
 // Call this before uros_init_executor().
 // This function is NOT thread-safe.
 rcl_ret_t uRosExecAgent::init_service(rcl_service_t *service, const rosidl_service_type_support_t *type_support, const char *service_name, UROS_QOS_MODE qos_mode) {
+    assert(this->bridge_instance != nullptr);
     rcl_ret_t ret_code = -1;
     
     for (int i = 0; i < MAX_SERVICES; i++) {
@@ -245,7 +251,8 @@ void uRosExecAgent::execute() {
         xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);   // Wait for notification indefinitely
 
         rcl_ret_t ret_code = rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(this->timing_conf->exectr_timeout_ms));
-        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, "", "Executor execution time exceeded limits!", true);
+        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, 
+                            "Executor execution time exceeded limits!", this->exec_sys_name, true);
 
         if (ret_code != RCL_RET_OK) {
             if (exec_fail_retry == MAX_EXECTR_FAIL_RETRY) {

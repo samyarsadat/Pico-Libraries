@@ -41,7 +41,7 @@ bool adc_init_mutex() {
 /* ---- Destroy the ADC mutex ---- */
 void adc_destroy_mutex() {
     if (adc_mutex != NULL) {
-        opassert(xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE);
+        opequal(xSemaphoreTake(adc_mutex, portMAX_DELAY), pdTRUE);
         vSemaphoreDelete(adc_mutex);
         adc_mutex = NULL;
     }
@@ -64,10 +64,10 @@ bool adc_take_mutex() {
 void adc_release_mutex() {
     if (adc_mutex != NULL) {
         if (__get_IPSR() == 0) {
-            opassert(xSemaphoreGive(adc_mutex) == pdTRUE);
+            opequal(xSemaphoreGive(adc_mutex), pdTRUE);
             return;
         }
 
-        opassert(xSemaphoreGiveFromISR(adc_mutex, NULL) == pdTRUE);
+        opequal(xSemaphoreGiveFromISR(adc_mutex, NULL), pdTRUE);
     }
 }

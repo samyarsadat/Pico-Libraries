@@ -21,16 +21,8 @@ bool pico_serial_transport_close(struct uxrCustomTransport* transport) {
 }
 
 size_t pico_serial_transport_write(struct uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* errcode) {
-    (void) transport;
-    
-    for (size_t i = 0; i < len; i++) {
-        if (buf[i] != putchar(buf[i])) {
-            *errcode = 1;
-            return i;
-        }
-    }
-
-    return len;
+    (void) transport; (void) errcode;
+    return stdio_put_string((const char*) buf, len, false, false);
 }
 
 size_t pico_serial_transport_read(struct uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* errcode) {
@@ -45,7 +37,7 @@ size_t pico_serial_transport_read(struct uxrCustomTransport* transport, uint8_t*
             return i;
         }
 
-        int character = getchar_timeout_us(elapsed_time_us);
+        int character = stdio_getchar_timeout_us(elapsed_time_us);
         
         if (character == PICO_ERROR_TIMEOUT) {
             *errcode = 1;

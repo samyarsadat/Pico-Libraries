@@ -104,3 +104,10 @@ int get_gpio_adc_channel(uint gpio) {
     
     return -1;  // Non-ADC pin provided or platform undefined.
 }
+
+// Reset the chip using the watchdog.
+void watchdog_reset() {
+    watchdog_disable();
+    watchdog_enable(0, 1);
+    while (1);
+}

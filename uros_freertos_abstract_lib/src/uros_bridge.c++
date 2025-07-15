@@ -98,14 +98,14 @@ void uRosBridgeAgent::configure(uros_init_function init_function, uros_fini_func
 
     // Set MicroROS transport
     // rmw_uros_set_custom_transport only checks for nullptr arguments.
-    opassert(rmw_uros_set_custom_transport(
+    opequal(rmw_uros_set_custom_transport(
         true,
         nullptr,
         pico_serial_transport_open,
         pico_serial_transport_close,
         pico_serial_transport_write,
         pico_serial_transport_read
-    ) == RMW_RET_OK);
+    ), RMW_RET_OK);
 }
 
 // Initialize the MicroROS node.
@@ -118,7 +118,7 @@ rcl_ret_t uRosBridgeAgent::uros_init_node(const char *node_name, const char *nam
 
         // Initialize the MicroROS node
         this->init_ret_codes[0] = rcl_init_options_init(&this->rcl_init_opts, this->rcl_allocator);
-        opassert(rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id) == RCL_RET_OK);
+        opequal(rcl_init_options_set_domain_id(&this->rcl_init_opts, (size_t) node_domain_id), RCL_RET_OK);
         this->init_ret_codes[1] = rclc_support_init_with_options(&this->rc_support, 0, nullptr, &this->rcl_init_opts, &this->rcl_allocator);
         this->init_ret_codes[2] = rclc_node_init_default(&this->rc_node, node_name, name_space, &this->rc_support);
 
@@ -141,6 +141,7 @@ bool uRosBridgeAgent::uros_add_executor(uRosExecAgent *executor_agent) {
     for (int i = 0; i < MAX_EXECUTORS; i++) {
         if (rc_executors[i] == nullptr) {
             rc_executors[i] = executor_agent;
+            executor_agent->set_bridge_agent(this);
             return true;
         }
     }
@@ -157,7 +158,6 @@ rcl_ret_t uRosBridgeAgent::uros_init_executors() {
 
     for (int i = 0; i < MAX_EXECUTORS; i++) {
         if (rc_executors[i] != nullptr && !rc_executors[i]->is_initialized()) {
-            rc_executors[i]->set_bridge_agent(this);
             ret_code = rc_executors[i]->uros_init_executor();
 
             if (ret_code != RCL_RET_OK) {
@@ -224,7 +224,7 @@ rcl_ret_t uRosBridgeAgent::init_publisher(rcl_publisher_t *publisher, const rosi
     rcl_ret_t ret_code = -1;
     
     for (int i = 0; i < MAX_PUBLISHERS; i++) {
-        if (publishers[i] != nullptr) {
+        if (publishers[i] == nullptr) {
             *publisher = rcl_get_zero_initialized_publisher();
             
             if (qos_mode == QOS_RELIABLE) {

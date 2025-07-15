@@ -26,7 +26,7 @@
 
 
 // Max agent name length
-#define MAX_NAME_LENGTH  25
+#define AGENT_MAX_NAME_LENGTH  20
 
 
 // Agent class
@@ -65,6 +65,6 @@ class Agent {
         virtual void execute() = 0;  // Declare as pure virtual function.
 
         TaskHandle_t task_handle = nullptr;  // The FreeRTOS task handle.
-        char agent_name[MAX_NAME_LENGTH];    // The agent (task) name.
+        char agent_name[AGENT_MAX_NAME_LENGTH];    // The agent (task) name.
         configSTACK_DEPTH_TYPE stack_depth;  // The static stack depth required by the agent.
 };
