@@ -45,7 +45,8 @@
 // Misc.
 #define EXECTR_AGENT_MEMORY  2048
 #define EXECTR_SYSNAME_PATH  "microros/executor/"
-constexpr size_t EXECTR_SYSNAME_PATH_LEN = std::string_view(EXECTR_SYSNAME_PATH).size();
+static constexpr size_t EXECTR_SYSNAME_PATH_LEN = 
+    std::string_view(EXECTR_SYSNAME_PATH).size();
 
 // Forward declaration of bridge agent class
 class uRosBridgeAgent;
@@ -106,6 +107,9 @@ class uRosExecAgent : public Agent
         // This function is called ONCE by the bridge agent ONLY.
         void set_bridge_agent(uRosBridgeAgent* bridge_agent);
 
+        // Get the micro-ROS system name of the executor.
+        char* get_executor_sysname();
+
     private:
         // Hardware timer for execution timing
         struct repeating_timer exec_timer_rt;
@@ -120,8 +124,8 @@ class uRosExecAgent : public Agent
         bool executor_initialized = false;
 
         int executor_handles = 0;
-        rcl_subscription_t** subscribers;
-        rcl_service_t** services;
+        rcl_subscription_t** subscribers = nullptr;
+        rcl_service_t** services = nullptr;
 
     protected:
         // Execution function

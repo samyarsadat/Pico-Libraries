@@ -47,11 +47,16 @@ extern DiagPublisher diag_util;
 
 // Constructor
 uRosBridgeAgent::uRosBridgeAgent() : Agent(BRIDGE_AGENT_NAME, BRIDGE_AGENT_MEMORY) {
-    this->publishers = static_cast<rcl_publisher_t**>(pvPortCalloc(MAX_PUBLISHERS, sizeof(rcl_publisher_t*)));
-    this->rc_executors = static_cast<uRosExecAgent**>(pvPortCalloc(MAX_EXECUTORS, sizeof(uRosExecAgent*)));
-
     this->rcl_init_opts = rcl_get_zero_initialized_init_options();
     this->rc_node = rcl_get_zero_initialized_node();
+
+    #if MAX_PUBLISHERS > 0
+    this->publishers = static_cast<rcl_publisher_t**>(pvPortCalloc(MAX_PUBLISHERS, sizeof(rcl_publisher_t*)));
+    #endif
+
+    #if MAX_EXECUTORS > 0
+    this->rc_executors = static_cast<uRosExecAgent**>(pvPortCalloc(MAX_EXECUTORS, sizeof(uRosExecAgent*)));
+    #endif
 
     memset(this->init_ret_codes, -1, sizeof(this->init_ret_codes));
 }
@@ -261,7 +266,7 @@ rclc_support_t* uRosBridgeAgent::get_support() {
 
 // Get a MicroROS executor.
 rclc_executor_t* uRosBridgeAgent::get_executor(uint8_t num) {
-    if (num < MAX_EXECUTORS) {
+    if (num >= 0 && num < MAX_EXECUTORS) {
         return rc_executors[num]->get_executor();
     }
 
@@ -280,18 +285,17 @@ void uRosBridgeAgent::notify_executor_failure(uRosExecAgent *executor, rcl_ret_t
     LOG(LOG_LVL_ERROR, "Executor failure! Disconnecting & stopping agent...");
     this->disco_agent_flag = true;
 
-    DiagKvPairs diag_kvs(3);
+    DiagKvPairs diag_kvs(2);
     diag_kvs.add("code", code);
     diag_kvs.add("retry_count", retries);
-    diag_kvs.add("name", executor->get_agent_name());
-    (void) diag_util.publish(DIAG_LVL_ERROR, "microros/executors", DIAG_FIRMWARE_HARDWARE_ID, "fatal micro-ROS executor failure", &diag_kvs);
+    (void) diag_util.publish(DIAG_LVL_ERROR, executor->get_executor_sysname(), DIAG_FIRMWARE_HARDWARE_ID, 
+                             "fatal micro-ROS executor failure", &diag_kvs);
 }
 
 // Main execution function.
 void uRosBridgeAgent::execute() {
     LOG(LOG_LVL_DEBUG, "Starting micro-ROS bridge notification timer...");
-    opassert(add_repeating_timer_ms(AGENT_STATE_MACHINE_EXEC_INTERVAL_MS, 
-                                    uRosBridgeAgent::exec_notify_timer_callback, 
+    opassert(add_repeating_timer_ms(BRIDGE_EXEC_INTERVAL_MS, uRosBridgeAgent::exec_notify_timer_callback, 
                                     (void *) this, &exec_timer_rt));
 
     uint32_t last_exec_time = 0;
@@ -311,7 +315,7 @@ void uRosBridgeAgent::execute() {
                 break;
             case AGENT_CONNECTED:
                 current_uros_state = (!this->disco_agent_flag && ping_agent()) ? AGENT_CONNECTED : AGENT_DISCONNECTED;
-                check_exec_interval(last_exec_time, AGENT_STATE_MACHINE_EXEC_INTERVAL_MS + 10, 
+                CHECK_EXEC_INTERVAL(last_exec_time, BRIDGE_EXEC_INTERVAL_LIMIT_MS, 
                                     "Agent state machine exec interval exceeded.", "microros/bridge", true);
                 break;
             case AGENT_DISCONNECTED:
@@ -335,9 +339,8 @@ void uRosBridgeAgent::execute() {
 
 // PRIVATE: Executor notification timer callback.
 bool uRosBridgeAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
-    uRosBridgeAgent* bridge_agent = (uRosBridgeAgent*) rt->user_data;
-    assert(bridge_agent != nullptr);
-    TaskHandle_t agent_task = bridge_agent->get_rtos_task();
+    assert(rt->user_data != nullptr);
+    TaskHandle_t agent_task = static_cast<uRosBridgeAgent*>(rt->user_data)->get_rtos_task();
     
     if (agent_task != nullptr) {
         BaseType_t higher_prio_woken;

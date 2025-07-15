@@ -44,9 +44,15 @@ extern Logger logger;
 // Constructor
 uRosExecAgent::uRosExecAgent(const char* name, exectr_timing_conf_t* timing_conf) : Agent(name, EXECTR_AGENT_MEMORY) {
     this->timing_conf = timing_conf;
-    this->subscribers = static_cast<rcl_subscription_t**>(pvPortCalloc(MAX_SUBSCRIBERS, sizeof(rcl_subscription_t*)));
-    this->services = static_cast<rcl_service_t**>(pvPortCalloc(MAX_SERVICES, sizeof(rcl_service_t*)));
     this->rc_executor = rclc_executor_get_zero_initialized_executor();
+
+    #if MAX_SUBSCRIBERS > 0
+    this->subscribers = static_cast<rcl_subscription_t**>(pvPortCalloc(MAX_SUBSCRIBERS, sizeof(rcl_subscription_t*)));
+    #endif
+    
+    #if MAX_SERVICES > 0
+    this->services = static_cast<rcl_service_t**>(pvPortCalloc(MAX_SERVICES, sizeof(rcl_service_t*)));
+    #endif
 
     strcpy(this->exec_sys_name, EXECTR_SYSNAME_PATH);
     strcat(this->exec_sys_name, this->agent_name);
@@ -235,6 +241,11 @@ void uRosExecAgent::set_bridge_agent(uRosBridgeAgent* bridge_agent) {
     this->bridge_instance = bridge_agent;
 }
 
+// Get the micro-ROS system name of the executor.
+char* uRosExecAgent::get_executor_sysname() {
+    return this->exec_sys_name;
+}
+
 // Main execution function.
 void uRosExecAgent::execute() {
     assert(this->executor_initialized);
@@ -251,7 +262,7 @@ void uRosExecAgent::execute() {
         xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);   // Wait for notification indefinitely
 
         rcl_ret_t ret_code = rclc_executor_spin_some(&rc_executor, RCL_MS_TO_NS(this->timing_conf->exectr_timeout_ms));
-        check_exec_interval(last_exec_time, this->timing_conf->exec_interval_limit_ms, 
+        CHECK_EXEC_INTERVAL(last_exec_time, this->timing_conf->exec_interval_limit_ms, 
                             "Executor execution time exceeded limits!", this->exec_sys_name, true);
 
         if (ret_code != RCL_RET_OK) {
@@ -272,9 +283,8 @@ void uRosExecAgent::execute() {
 
 // PRIVATE: Executor notification timer callback.
 bool uRosExecAgent::exec_notify_timer_callback(struct repeating_timer *rt) {
-    uRosExecAgent* exec_agent = (uRosExecAgent*) rt->user_data;
-    assert(exec_agent != nullptr);
-    TaskHandle_t agent_task = exec_agent->get_rtos_task();
+    assert(rt->user_data != nullptr);
+    TaskHandle_t agent_task = static_cast<uRosExecAgent*>(rt->user_data)->get_rtos_task();
     
     if (agent_task != nullptr) {
         BaseType_t higher_prio_woken;

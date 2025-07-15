@@ -23,7 +23,6 @@
 #include "uros_utils_lib/diag_util.h"
 #include "uros_common/definitions.h"
 #include "pico_log_lib/logger.h"
-#include <rmw_microros/rmw_microros.h>
 #include "semphr.h"
 #include <stdlib.h>
 
@@ -69,8 +68,4 @@ bool check_exec_interval(uint32_t &last_call_time, uint16_t max_exec_time_ms, co
     }
 
     return true;
-}
-
-bool ping_agent(const int timeout_ms, const uint8_t attempts) {
-    return (rmw_uros_ping_agent(timeout_ms, attempts) == RMW_RET_OK);
 }

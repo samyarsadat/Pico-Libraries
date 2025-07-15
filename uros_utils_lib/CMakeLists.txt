@@ -39,6 +39,14 @@ pico_sdk_init()
 # Add source subdirectory
 add_subdirectory(src)
 
+# Library config options
+if(DEFINED DIAG_FIRMWARE_HARDWARE_ID)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DIAG_FIRMWARE_HARDWARE_ID="${DIAG_FIRMWARE_HARDWARE_ID}")
+endif()
+if(DEFINED DIAG_PUBLISHER_DISABLE_PUBLISH)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DIAG_PUBLISHER_DISABLE_PUBLISH=${DIAG_PUBLISHER_DISABLE_PUBLISH})
+endif()
+
 # CMake flags
 set(FLAGS "-mthumb -ffunction-sections -fdata-sections")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS}")

@@ -23,4 +23,6 @@
 #include "uros_common/diag_msgs.h"
 
 // Defualt firmware hardware ID. Override this!
+#ifndef DIAG_FIRMWARE_HARDWARE_ID
 #define DIAG_FIRMWARE_HARDWARE_ID  "pico-fw-v1.0_2025-01-01_DEFAULT"
+#endif

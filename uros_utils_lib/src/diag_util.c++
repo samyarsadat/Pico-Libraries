@@ -22,6 +22,7 @@
 #include "uros_utils_lib/diag_util.h"
 #include "pico_log_lib/logger.h"
 #include <memory>
+#include <string_view>
 
 
 // This must be declared elsewhere!
@@ -106,11 +107,25 @@ rcl_ret_t DiagPublisher::publish(const DIAG_MSG_LEVEL level, const char* name, c
         log_diag_msg(&diag_msg);
     }
 
+    #ifndef DIAG_PUBLISHER_DISABLE_PUBLISH
     return rcl_publish(this->publisher, &diag_msg, nullptr);
+    #else
+    return RCL_RET_OK;
+    #endif
 }
 
 void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_msg) {
     assert(diag_msg != nullptr);
+
+    if (diag_msg->values.size == 0) {
+        logger.log(__func__, "", __LINE__, LOG_LVL_WARN, "[%s]: %s", diag_msg->name.data, diag_msg->message.data);
+        return;
+    }
+
+    static constexpr const char* prefix = "\r\n\t- ";
+    static constexpr const char* separator = ": ";
+    static constexpr size_t prefix_len = std::string_view(prefix).size();
+    static constexpr size_t separator_len = std::string_view(separator).size();
 
     size_t kv_buff_size = 1;
     for (size_t i = 0; i < diag_msg->values.size; i++) {
@@ -118,26 +133,27 @@ void DiagPublisher::log_diag_msg(diagnostic_msgs__msg__DiagnosticStatus* diag_ms
     }
 
     char* kv_buff = static_cast<char*>(pvPortMalloc(kv_buff_size));
-    size_t kv_buff_offset = 0;
-
-    constexpr size_t kv_fmt_num = 4;
-    char* kv_fmt[kv_fmt_num] = {"\r\n\t- ", nullptr, ": ", nullptr};
-    size_t kv_fmt_sizes[kv_fmt_num] = {5, 0, 2, 0};
+    char* curr_write_ptr = kv_buff;
 
     for (size_t i = 0; i < diag_msg->values.size; i++) {
-        kv_fmt[1] = diag_msg->values.data[i].key.data;
-        kv_fmt[3] = diag_msg->values.data[i].value.data;
-        kv_fmt_sizes[1] = diag_msg->values.data[i].key.size;
-        kv_fmt_sizes[3] = diag_msg->values.data[i].value.size;
+        diagnostic_msgs__msg__KeyValue* kv_ptr = &diag_msg->values.data[i];
 
-        for (size_t i = 0; i < kv_fmt_num; i++) {
-            assert(kv_fmt_sizes[i] < kv_buff_size - kv_buff_offset);
-            memcpy(kv_buff + kv_buff_offset, kv_fmt[i], kv_fmt_sizes[i]);
-            kv_buff_offset += kv_fmt_sizes[i];
-        }
+        memcpy(curr_write_ptr, prefix, prefix_len);
+        curr_write_ptr += prefix_len;
+
+        const size_t key_len = kv_ptr->key.size;
+        memcpy(curr_write_ptr, kv_ptr->key.data, key_len);
+        curr_write_ptr += key_len;
+
+        memcpy(curr_write_ptr, separator, separator_len);
+        curr_write_ptr += separator_len;
+
+        const size_t value_len = kv_ptr->value.size;
+        memcpy(curr_write_ptr, kv_ptr->value.data, value_len);
+        curr_write_ptr += value_len;
     }
 
-    kv_buff[kv_buff_offset] = '\0';
+    *curr_write_ptr = '\0';
     logger.log(__func__, "", __LINE__, LOG_LVL_WARN, "[%s]: %s%s", diag_msg->name.data, diag_msg->message.data, kv_buff);
     vPortFree(kv_buff);
 }
