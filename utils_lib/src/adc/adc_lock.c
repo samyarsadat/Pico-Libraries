@@ -21,34 +21,58 @@
 
 #include "utils_lib/adc/adc_lock.h"
 #include "hardware/adc.h"
+#include "common/opassert.h"
+
+#ifndef UTILS_LIB_NO_FREERTOS
+#include "cmsis_gcc.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
-#include "common/opassert.h"
-#include "cmsis_gcc.h"
+#else
+#include "pico/sync.h"
+#endif
+
+
+#ifndef UTILS_LIB_NO_FREERTOS
+SemaphoreHandle_t adc_mutex = NULL;
+#else
+mutex_t adc_mutex;
+bool adc_mutex_init = false;
+#endif
 
 
 /* ---- Initialize ADC mutex ---- */
-SemaphoreHandle_t adc_mutex = NULL;
 bool adc_init_mutex() {
+    #ifndef UTILS_LIB_NO_FREERTOS
     if (adc_mutex == NULL) {
         adc_mutex = xSemaphoreCreateMutex();
         return adc_mutex != NULL;
     }
+    #else
+    if (!adc_mutex_init) {
+        mutex_init(&adc_mutex);
+        adc_mutex_init = true;
+    }
+    #endif
 
     return true;
 }
 
 /* ---- Destroy the ADC mutex ---- */
 void adc_destroy_mutex() {
+    #ifndef UTILS_LIB_NO_FREERTOS
     if (adc_mutex != NULL) {
         opequal(xSemaphoreTake(adc_mutex, portMAX_DELAY), pdTRUE);
         vSemaphoreDelete(adc_mutex);
         adc_mutex = NULL;
     }
+    #else
+    (void) 0;  // NOP
+    #endif
 }
 
 /* ---- Take the ADC mutex ---- */
 bool adc_take_mutex() {
+    #ifndef UTILS_LIB_NO_FREERTOS
     if (adc_mutex != NULL) {
         if (__get_IPSR() == 0) {   // Check if we are in an ISR or not
             return xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE;
@@ -56,12 +80,19 @@ bool adc_take_mutex() {
 
         return xSemaphoreTakeFromISR(adc_mutex, NULL) == pdTRUE;
     }
+    #else
+    if (adc_mutex_init) {
+        mutex_enter_blocking(&adc_mutex);
+        return true;
+    }
+    #endif
     
     return false;
 }
 
 /* ---- Release the ADC mutex ---- */
 void adc_release_mutex() {
+    #ifndef UTILS_LIB_NO_FREERTOS
     if (adc_mutex != NULL) {
         if (__get_IPSR() == 0) {
             opequal(xSemaphoreGive(adc_mutex), pdTRUE);
@@ -70,4 +101,9 @@ void adc_release_mutex() {
 
         opequal(xSemaphoreGiveFromISR(adc_mutex, NULL), pdTRUE);
     }
+    #else
+    if (adc_mutex_init) {
+        mutex_exit(&adc_mutex);
+    }
+    #endif
 }

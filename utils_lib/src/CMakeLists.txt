@@ -19,7 +19,8 @@
 
 # Add source files
 add_library(${PROJECT_NAME} hardware.c
-                            adc/adc_lock.c)
+                            adc/adc_lock.c
+                            perf/exec_interval.c++)
 
 # Include header files
 target_include_directories(${PROJECT_NAME} PUBLIC ../include)
@@ -29,8 +30,14 @@ target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       hardware_pwm
                                       hardware_adc
                                       pico_log_lib
-                                      cmsis_core
-                                      FreeRTOS-Kernel)
+                                      cmsis_core)
+
+if (UTILS_LIB_NO_FREERTOS)
+    target_link_libraries(${PROJECT_NAME} pico_sync)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE UTILS_LIB_NO_FREERTOS=1)
+else ()
+    target_link_libraries(${PROJECT_NAME} FreeRTOS-Kernel)
+endif ()
 
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
