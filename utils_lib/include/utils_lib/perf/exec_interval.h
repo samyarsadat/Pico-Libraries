@@ -23,15 +23,22 @@
 #include "pico/stdlib.h"
 
 
-/*  
-    Execution interval checker.
-    Checks the amount of time passed since the last time it was called (with the specific time storage varialble provided).
-    Returns false if the execution time has exceeded the specified limit.
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
+    /*  
+        Execution interval checker.
+        Checks the amount of time passed since the last time it was called (with the specific time storage varialble provided).
+        Returns false if the execution time has exceeded the specified limit.
 
-    This is a copy of the same function from uros_utils_lib, but with micro-ROS integration removed.
-*/
-bool check_exec_interval(uint32_t &last_call_time, const uint16_t max_exec_time_ms, const char* msg, 
-                         const char* func, const uint16_t line);
+        This is a copy of the same function from uros_utils_lib, but with micro-ROS integration removed.
+    */
+    bool check_exec_interval(uint32_t* last_call_time, const uint16_t max_exec_time_ms, const char* msg, 
+                             const char* func, const uint16_t line);
+#ifdef __cplusplus
+}
+#endif
 
 #define CHECK_EXEC_INTERVAL(last_call_time, max_exec_time_ms, msg) \
         check_exec_interval(last_call_time, max_exec_time_ms, msg, __func__, __LINE__);

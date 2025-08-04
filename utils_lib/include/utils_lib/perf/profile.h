@@ -22,8 +22,9 @@
 
 
 #if defined(NDEBUG) || !defined(PERF_PROFILE_EN)
-#define PROFILE_VAR_DECLARE(name)             (void) 0
+#define PROFILE_VARS_DECLARE(name)            (void) 0
 #define PROFILE_SECT_BEGIN_NO_DCLR(name)      (void) 0
+#define PROFILE_SECT_END_NO_DCLR(name)        (void) 0
 #define PROFILE_SECT_BEGIN(name)              (void) 0
 #define PROFILE_SECT_END(name)                (void) 0
 #define PROFILE_RESULT_LOG(name, time_div)    (void) 0

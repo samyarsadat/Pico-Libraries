@@ -25,12 +25,8 @@
 
 #ifdef NDEBUG
 #define opassert(expr) ((void) expr)
-#else
-#define opassert(expr) ((expr) ? (void) 0 : __assert_func(__FILE__, __LINE__, __ASSERT_FUNC, #expr))
-#endif
-
-#ifdef NDEBUG
 #define opequal(l_expr, r_expr) ((void) l_expr)
 #else
+#define opassert(expr) ((expr) ? (void) 0 : __assert_func(__FILE__, __LINE__, __ASSERT_FUNC, #expr))
 #define opequal(l_expr, r_expr) ((l_expr == r_expr) ? (void) 0 : __assert_func(__FILE__, __LINE__, __ASSERT_FUNC, #l_expr))
 #endif

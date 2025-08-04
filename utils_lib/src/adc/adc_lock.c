@@ -78,7 +78,8 @@ bool adc_take_mutex() {
             return xSemaphoreTake(adc_mutex, portMAX_DELAY) == pdTRUE;
         }
 
-        return xSemaphoreTakeFromISR(adc_mutex, NULL) == pdTRUE;
+        // FreeRTOS mutexes cannot be used in ISRs.
+        return false;
     }
     #else
     if (adc_mutex_init) {
@@ -98,8 +99,6 @@ void adc_release_mutex() {
             opequal(xSemaphoreGive(adc_mutex), pdTRUE);
             return;
         }
-
-        opequal(xSemaphoreGiveFromISR(adc_mutex, NULL), pdTRUE);
     }
     #else
     if (adc_mutex_init) {

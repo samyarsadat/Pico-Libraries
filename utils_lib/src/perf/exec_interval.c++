@@ -27,19 +27,19 @@
 extern Logger logger;
 
 
-bool check_exec_interval(uint32_t &last_call_time, uint16_t max_exec_time_ms, const char* msg,
+bool check_exec_interval(uint32_t* last_call_time, uint16_t max_exec_time_ms, const char* msg,
                          const char* func, const uint16_t line) {
-    assert(msg != nullptr);
+    assert(last_call_time != nullptr && msg != nullptr);
     const uint32_t current_time = time_us_32();
     
     // Initialize last_call_time_ms if it's 0 (first call).
-    if (last_call_time == 0) { 
-        last_call_time = current_time;
+    if (*last_call_time == 0) { 
+        *last_call_time = current_time;
         return true;
     }
 
-    uint32_t exec_time_ms = (current_time - last_call_time) / 1000;
-    last_call_time = current_time;
+    uint32_t exec_time_ms = (current_time - *last_call_time) / 1000;
+    *last_call_time = current_time;
     
     if (exec_time_ms > max_exec_time_ms) {
         logger.log(func, "", line, LOG_LVL_WARN, "%s [actual: %ums, limit: %ums]", msg, exec_time_ms, max_exec_time_ms);
