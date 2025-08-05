@@ -18,17 +18,17 @@
 */
 
 #pragma once
-#include "pico_log_lib/logger.h"
+#include "pico_log_lib/internal/common.h"
 
 
 #if defined(NDEBUG) || !defined(PERF_PROFILE_EN)
-#define PROFILE_VARS_DECLARE(name)            (void) 0
-#define PROFILE_SECT_BEGIN_NO_DCLR(name)      (void) 0
-#define PROFILE_SECT_END_NO_DCLR(name)        (void) 0
-#define PROFILE_SECT_BEGIN(name)              (void) 0
-#define PROFILE_SECT_END(name)                (void) 0
-#define PROFILE_RESULT_LOG(name, time_div)    (void) 0
-#define PROFILE_SECT_END_LOG(name, time_div)  (void) 0
+#define PROFILE_VARS_DECLARE(name)                    (void) 0
+#define PROFILE_SECT_BEGIN_NO_DCLR(name)              (void) 0
+#define PROFILE_SECT_END_NO_DCLR(name)                (void) 0
+#define PROFILE_SECT_BEGIN(name)                      (void) 0
+#define PROFILE_SECT_END(name)                        (void) 0
+#define PROFILE_RESULT_LOG(name, time_div, logger)    (void) 0
+#define PROFILE_SECT_END_LOG(name, time_div, logger)  (void) 0
 #else
 #define PROFILE_VARS_DECLARE(name)      \
     uint32_t _profile_start_##name = 0; \
@@ -46,9 +46,19 @@
 #define PROFILE_SECT_END(name) \
     const uint32_t _profile_result_##name = (time_us_32() - _profile_start_##name)
 
-#define PROFILE_RESULT_LOG(name, time_div) \
-    LOG(LOG_LVL_DEBUG, "Time for "#name": %f", _profile_result_##name / time_div)
+#ifdef __cplusplus
+#include "pico_log_lib/logger.h"
+#define _PROFILER_LOG(logger, level, fmt, ...) \
+    logger.log(__func__, "", __LINE__, level, fmt, ##__VA_ARGS__)
+#else
+#include "pico_log_lib/logger_c.h"
+#define _PROFILER_LOG(logger, level, fmt, ...) \
+    logger_log(logger, __func__, "", __LINE__, level, fmt, ##__VA_ARGS__)
+#endif
 
-#define PROFILE_SECT_END_LOG(name, time_div) \
-    LOG(LOG_LVL_DEBUG, "Time for "#name": %f", (time_us_32() - _profile_start_##name) / time_div)
+#define PROFILE_RESULT_LOG(name, time_div, logger) \
+    _PROFILER_LOG(logger, LOG_LVL_DEBUG, "Time for "#name": %f", _profile_result_##name / time_div)
+
+#define PROFILE_SECT_END_LOG(name, time_div, logger) \
+    _PROFILER_LOG(logger, LOG_LVL_DEBUG, "Time for "#name": %f", (time_us_32() - _profile_start_##name) / time_div)
 #endif

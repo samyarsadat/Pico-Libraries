@@ -32,12 +32,5 @@ target_link_libraries(${PROJECT_NAME} pico_stdlib
                                       pico_log_lib
                                       cmsis_core)
 
-if (UTILS_LIB_NO_FREERTOS)
-    target_link_libraries(${PROJECT_NAME} pico_sync)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE UTILS_LIB_NO_FREERTOS=1)
-else ()
-    target_link_libraries(${PROJECT_NAME} FreeRTOS-Kernel)
-endif ()
-
 # Enable all warnings
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
