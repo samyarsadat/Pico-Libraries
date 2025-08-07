@@ -31,7 +31,6 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(utils_lib VERSION 0.1.0 LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-cmake_policy(SET CMP0079 NEW)
 
 # Initialize the Pico SDK
 pico_sdk_init()
@@ -40,16 +39,8 @@ pico_sdk_init()
 add_subdirectory(src)
 
 # Library options
-if (UTILS_LIB_NO_FREERTOS)
-    target_link_libraries(${PROJECT_NAME} pico_sync)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE UTILS_LIB_NO_FREERTOS=1)
-else ()
-    target_link_libraries(${PROJECT_NAME} FreeRTOS-Kernel)
-endif ()
-
-if (DEFINED PERF_PROFILE_EN)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE PERF_PROFILE_EN)
-endif ()
+cmake_policy(SET CMP0077 NEW)
+option(UTILS_LIB_NO_FREERTOS "Disable FreeRTOS integrations" OFF)
 
 # CMake flags
 set(FLAGS "-mthumb -ffunction-sections -fdata-sections")
