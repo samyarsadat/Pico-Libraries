@@ -41,4 +41,12 @@ extern "C"
 #endif
 
 #define CHECK_EXEC_INTERVAL(last_call_time, max_exec_time_ms, msg) \
-        check_exec_interval(last_call_time, max_exec_time_ms, msg, __func__, __LINE__);
+        check_exec_interval(last_call_time, max_exec_time_ms, msg, __func__, __LINE__)
+
+#ifdef NDEBUG
+#define CHECK_EXEC_INTERVAL_DBG(last_call_time, max_exec_time_ms, msg) \
+        (void) last_call_time;
+#else
+#define CHECK_EXEC_INTERVAL_DBG(last_call_time, max_exec_time_ms, msg) \
+        CHECK_EXEC_INTERVAL(last_call_time, max_exec_time_ms, msg)
+#endif
